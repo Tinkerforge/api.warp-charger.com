@@ -1,0 +1,7 @@
+flask
+requests
+entsoe-py
+sqlite3
+
+# entsoe-py does not support numpy 2.0.0 yet, so force 1.x
+numpy==1.26.4
