@@ -75,7 +75,7 @@ def update_day_ahead_prices(country, resolution, date):
     return data_str
 
 @cached(cache=LRUCache(maxsize=1000))
-def get_day_ahead_prices(country, resolution, date):
+def get_day_ahead_prices_cached(country, resolution, date):
     cur = get_db().cursor()
     res = cur.execute("SELECT data FROM day_ahead_prices WHERE country = ? AND resolution = ? AND date = ?", (country, resolution, date))
     data = res.fetchone()
@@ -87,9 +87,20 @@ def get_day_ahead_prices(country, resolution, date):
         data = update_day_ahead_prices(country, resolution, date)
         logging.debug("data entso-e: {0}".format(data))
         if data == None:
-            return None
+            # Throw exception if no data was found
+            # This way the None-value will not be saved in the cache
+            raise Exception("No data")
 
     return list(map(int, data.split(',')))
+
+def get_day_ahead_prices(country, resolution, date):
+    try:
+        prices = get_day_ahead_prices_cached(country, resolution, date)
+    except:
+        return None
+
+    return prices
+
 
 @app.teardown_appcontext
 def close_connection(exception):
