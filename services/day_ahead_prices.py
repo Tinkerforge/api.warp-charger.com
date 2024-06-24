@@ -79,12 +79,17 @@ def get_day_ahead_prices(country, resolution, date):
     cur = get_db().cursor()
     res = cur.execute("SELECT data FROM day_ahead_prices WHERE country = ? AND resolution = ? AND date = ?", (country, resolution, date))
     data = res.fetchone()
-    logging.debug("data sqlite: {0}".format(data))
-    if data == None:
+    if data != None:
+        data = data[0]
+        logging.debug("data sqlite: {0}".format(data))
+    else:
         logging.debug("No data found in sqlite for date {0}".format(date))
         data = update_day_ahead_prices(country, resolution, date)
         logging.debug("data entso-e: {0}".format(data))
-    return data
+        if data == None:
+            return None
+
+    return list(map(int, data.split(',')))
 
 @app.teardown_appcontext
 def close_connection(exception):
