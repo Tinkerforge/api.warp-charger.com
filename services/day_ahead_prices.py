@@ -113,7 +113,7 @@ def home():
     return "<html>This is api.warp-charger.com.</br>This API can be used by WARP Charger to obtain relevant public information like day ahead prices."
 
 # TODO: Rate limite per IP
-@app.route('/day_ahead_prices/<country>/<resolution>/<date>', methods=['GET'])
+@app.route('/v1/day_ahead_prices/<country>/<resolution>/<date>', methods=['GET'])
 def day_ahead_prices(country, resolution, date):
     country    = country.lower()
     resolution = resolution.lower()
