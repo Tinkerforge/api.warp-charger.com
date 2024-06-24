@@ -9,6 +9,8 @@ from entsoe import EntsoePandasClient
 import pandas as pd
 from flask import Flask, jsonify, g
 from datetime import datetime, timedelta
+from cachetools import cached, LRUCache
+from threading import Lock
 
 DEFAULT_PORT = 5000
 FILE_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -17,6 +19,7 @@ WARP_DB_FILE = os.path.join(PROJET_DIR, "warp.db")
 ENTSOE_KEY = open(os.path.join(PROJET_DIR, "entsoe.key")).read().strip()
 
 logger = logging.getLogger(__name__)
+day_ahead_prices_lock = Lock()
 
 # Flask init
 app = Flask(__name__)
@@ -43,7 +46,7 @@ def update_day_ahead_prices(country, resolution, date):
         start  = pd.Timestamp(date, tz='Europe/Berlin')
         end    = start + timedelta(minutes=60*24-1)
         client = EntsoePandasClient(api_key=ENTSOE_KEY)
-        ts     = client.query_day_ahead_prices('DE_LU', start=start, end=end, resolution=resolution)
+        ts     = client.query_day_ahead_prices(country_code, start=start, end=end, resolution=resolution)
         data   = ts.to_list()
         # Check if data has valid number of entries
         if resolution == '15min' and len(data) != 4*24:
@@ -71,6 +74,7 @@ def update_day_ahead_prices(country, resolution, date):
 
     return data_str
 
+@cached(cache=LRUCache(maxsize=1000))
 def get_day_ahead_prices(country, resolution, date):
     cur = get_db().cursor()
     res = cur.execute("SELECT data FROM day_ahead_prices WHERE country = ? AND resolution = ? AND date = ?", (country, resolution, date))
@@ -110,7 +114,12 @@ def day_ahead_prices(country, resolution, date):
         logging.info("Date format not supported: {0}".format(date))
         return jsonify({"error": "Date format not supported"}), 400
 
-    prices = get_day_ahead_prices(country, resolution, date)
+    # Only allow one conneciton at a time to get the day ahead prices.
+    # This way we can be sure that there can't be any race conditions with
+    # the cache, the sqlite database and the entso-e API.
+    with day_ahead_prices_lock:
+        prices = get_day_ahead_prices(country, resolution, date)
+
     if prices == None:
         return jsonify({"error": "Data not found (too far into the future?)"}), 404
 
