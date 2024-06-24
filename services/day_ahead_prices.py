@@ -32,7 +32,11 @@ def get_db():
 def update_day_ahead_prices(country, resolution, date):
     try:
         # Currently only DE_LU is supported
-        if country != 'de':
+        if country in ('de', 'lu'):
+            country_code = 'DE_LU'
+        elif country == 'at':
+            country_code = 'AT'
+        else:
             logging.warning("Country not supported: {0}".format(country))
             return None
 
@@ -94,10 +98,10 @@ def day_ahead_prices(country, resolution, date):
     country    = country.lower()
     resolution = resolution.lower()
 
-    if country != 'de':
+    if not country in ('de', 'lu', 'at'):
         logging.info("Country not supported: {0}".format(country))
         return jsonify({"error": "Country not supported"}), 400
-    if resolution != '15min' and resolution != '60min':
+    if not resolution in('15min', '60min'):
         logging.info("Resolution not supported: {0}".format(resolution))
         return jsonify({"error": "Resolution not supported"}), 400
     try:
