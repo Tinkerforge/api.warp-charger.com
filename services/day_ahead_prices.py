@@ -105,7 +105,7 @@ def is_update_necessary(dap, min_price_list_length):
             logging.debug("Update because JSON malformed ({0})".format(str(dap)))
             return True
 
-        d1 = int(dap0_next_date)
+        d1 = int(dap0_next_date) - 60*60 # try update one hour before the wallboxes
         d2 = int(datetime.now().timestamp())
         if d1 < d2:
             logging.debug("Update because {0} < {1}".format(d1, d2))
