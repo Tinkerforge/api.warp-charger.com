@@ -1,8 +1,7 @@
 flask
-requests
 entsoe-py
 
 # entsoe-py does not support numpy 2.0.0 yet, so force 1.x
 numpy==1.26.4
 
-cachetools
+gunicorn
