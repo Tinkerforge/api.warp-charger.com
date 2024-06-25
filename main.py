@@ -37,7 +37,7 @@ port = int(os.environ.get('PORT', DEFAULT_PORT))
 running = False
 
 backend_thread = threading.Thread(target=backend_tasks)
-logging.basicConfig(filename='debug.log', level=logging.DEBUG, format="[%(levelname)-8s%(filename)s:%(lineno)s] %(message)s")
+logging.basicConfig(filename='debug.log', level=logging.DEBUG, format="[%(asctime)s %(levelname)-8s%(filename)s:%(lineno)s] %(message)s", datefmt='%Y-%m-%d %H:%M:%S')
 backend_thread.start()
 
 # Wait for first data update
