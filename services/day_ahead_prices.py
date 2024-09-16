@@ -133,7 +133,7 @@ def update():
 # TODO: Rate limit per IP
 @day_ahead_prices_api.route('/v1/day_ahead_prices/<country>/<resolution>', methods=['GET'])
 def day_ahead_prices(country, resolution):
-    def inner():
+    def inner(country, resolution):
         country    = country.lower()
         resolution = resolution.lower()
 
@@ -155,5 +155,5 @@ def day_ahead_prices(country, resolution):
 
         logging.error("Reached unreachable code")
         return '{"error":"Unknown error"}', 404
-    resp, status = inner()
+    resp, status = inner(country, resolution)
     return resp, status, {'Content-Type': 'application/json; charset=utf-8'}
