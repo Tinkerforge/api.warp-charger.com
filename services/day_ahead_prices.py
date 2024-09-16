@@ -4,7 +4,7 @@ import logging
 import os
 import entsoe
 import pandas as pd
-from flask import Blueprint
+from flask import Blueprint, jsonify
 from datetime import datetime, timedelta
 import time
 import json
@@ -20,7 +20,7 @@ ENTSOE_KEY = open(os.path.join(PROJET_DIR, "entsoe.key")).read().strip()
 logger = logging.getLogger(__name__)
 entsoe_client = entsoe.EntsoePandasClient(api_key=ENTSOE_KEY)
 
-DAY_AHEAD_PRICE_NOT_FOUND   = '{"error":"Data not found"}', 404
+DAY_AHEAD_PRICE_NOT_FOUND   = jsonify({"error": "Data not found"}), 404
 DAY_AHEAD_PRICE_DE_LU_15MIN = 0
 DAY_AHEAD_PRICE_DE_LU_60MIN = 1
 DAY_AHEAD_PRICE_AT_15MIN    = 2
@@ -138,19 +138,19 @@ def day_ahead_prices(country, resolution):
 
     if not country in ('de', 'lu', 'at'):
         logging.info("Country not supported: {0}".format(country))
-        return '{"error":"Country not supported"}', 400
+        return jsonify({"error": "Country not supported"}), 400
     if not resolution in('15min', '60min'):
         logging.info("Resolution not supported: {0}".format(resolution))
-        return '{"error":"Resolution not supported"}', 400
+        return jsonify({"error": "Resolution not supported"}), 400
 
     if country in ('de', 'lu') and resolution == '15min':
-        return dap_list[DAY_AHEAD_PRICE_DE_LU_15MIN]
+        return jsonify(dap_list[DAY_AHEAD_PRICE_DE_LU_15MIN])
     elif country in ('de', 'lu') and resolution == '60min':
-        return dap_list[DAY_AHEAD_PRICE_DE_LU_60MIN]
+        return jsonify(dap_list[DAY_AHEAD_PRICE_DE_LU_60MIN])
     elif country == 'at' and resolution == '15min':
-        return dap_list[DAY_AHEAD_PRICE_AT_15MIN]
+        return jsonify(dap_list[DAY_AHEAD_PRICE_AT_15MIN])
     elif country == 'at' and resolution == '60min':
-        return dap_list[DAY_AHEAD_PRICE_AT_60MIN]
+        return jsonify(dap_list[DAY_AHEAD_PRICE_AT_60MIN])
 
     logging.error("Reached unreachable code")
-    return '{"error":"Unknown error"}', 404
+    return jsonify({"error": "Unknown error"}), 404
