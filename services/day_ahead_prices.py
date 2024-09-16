@@ -133,24 +133,27 @@ def update():
 # TODO: Rate limit per IP
 @day_ahead_prices_api.route('/v1/day_ahead_prices/<country>/<resolution>', methods=['GET'])
 def day_ahead_prices(country, resolution):
-    country    = country.lower()
-    resolution = resolution.lower()
+    def inner():
+        country    = country.lower()
+        resolution = resolution.lower()
 
-    if not country in ('de', 'lu', 'at'):
-        logging.info("Country not supported: {0}".format(country))
-        return '{"error":"Country not supported"}', 400
-    if not resolution in('15min', '60min'):
-        logging.info("Resolution not supported: {0}".format(resolution))
-        return '{"error":"Resolution not supported"}', 400
+        if not country in ('de', 'lu', 'at'):
+            logging.info("Country not supported: {0}".format(country))
+            return '{"error":"Country not supported"}', 400
+        if not resolution in('15min', '60min'):
+            logging.info("Resolution not supported: {0}".format(resolution))
+            return '{"error":"Resolution not supported"}', 400
 
-    if country in ('de', 'lu') and resolution == '15min':
-        return dap_list[DAY_AHEAD_PRICE_DE_LU_15MIN]
-    elif country in ('de', 'lu') and resolution == '60min':
-        return dap_list[DAY_AHEAD_PRICE_DE_LU_60MIN]
-    elif country == 'at' and resolution == '15min':
-        return dap_list[DAY_AHEAD_PRICE_AT_15MIN]
-    elif country == 'at' and resolution == '60min':
-        return dap_list[DAY_AHEAD_PRICE_AT_60MIN]
+        if country in ('de', 'lu') and resolution == '15min':
+            return dap_list[DAY_AHEAD_PRICE_DE_LU_15MIN]
+        elif country in ('de', 'lu') and resolution == '60min':
+            return dap_list[DAY_AHEAD_PRICE_DE_LU_60MIN]
+        elif country == 'at' and resolution == '15min':
+            return dap_list[DAY_AHEAD_PRICE_AT_15MIN]
+        elif country == 'at' and resolution == '60min':
+            return dap_list[DAY_AHEAD_PRICE_AT_60MIN]
 
-    logging.error("Reached unreachable code")
-    return '{"error":"Unknown error"}', 404
+        logging.error("Reached unreachable code")
+        return '{"error":"Unknown error"}', 404
+    resp, status = inner()
+    return resp, status, {'Content-Type': 'application/json; charset=utf-8'}
