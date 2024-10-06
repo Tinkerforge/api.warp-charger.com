@@ -101,9 +101,9 @@ def update_day_ahead_prices(country_code, resolution):
         prices = [int(i*100) for i in data]
         # If we got day ahead prices ask again tomorrow, else ask again today
         if (resolution == '15min' and len(data) < 25*4) or (resolution == '60min' and len(data) < 25):
-            next_date = start.replace(hour=14, minute=0, second=0, microsecond=0)
+            next_date = start.replace(hour=13, minute=30, second=0, microsecond=0)
         else:
-            next_date = (start + timedelta(days=1)).replace(hour=14, minute=0, second=0, microsecond=0)
+            next_date = (start + timedelta(days=1)).replace(hour=13, minute=30, second=0, microsecond=0)
         next_date_ts = int(next_date.timestamp())
         logging.debug("Discovered new day ahead prices for {0}/{1}: {2}, next: {3}/{4}".format(str(start), str(first_date_ts), str(prices), str(next_date), str(next_date_ts)))
 
@@ -148,7 +148,7 @@ def is_update_necessary(dap, min_price_list_length):
             logging.debug("Update because JSON malformed ({0})".format(str(dap)))
             return True
 
-        d1 = int(dap0_next_date) - 60*60 # try update one hour before the wallboxes
+        d1 = int(dap0_next_date) - 60*30 # try update 30 minutes before the wallboxes
         d2 = int(datetime.now().timestamp())
         if d1 < d2:
             logging.debug("Update because {0} < {1}".format(d1, d2))
