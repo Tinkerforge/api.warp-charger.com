@@ -160,6 +160,7 @@ def is_update_necessary(dap, min_price_list_length):
         d2 = min_price_list_length
         if d1 < d2:
             logging.debug("Update because price list too small {0} < {1}".format(d1, d2))
+            return True
 
         logging.debug("No update necessary")
         return False
