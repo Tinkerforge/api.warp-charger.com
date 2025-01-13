@@ -102,6 +102,8 @@ def update_day_ahead_prices(country_code, resolution):
         # If we got day ahead prices ask again tomorrow, else ask again today
         if (resolution == 'PT15M' and len(data) < 26*4) or (resolution == 'PT60M' and len(data) < 26):
             next_date = start.replace(hour=13, minute=30, second=0, microsecond=0)
+            if next_date < pd.Timestamp.today(tz='Europe/Berlin'):
+                next_date = pd.Timestamp.today(tz='Europe/Berlin') + timedelta(minutes=10)
         else:
             next_date = (start + timedelta(days=1)).replace(hour=13, minute=30, second=0, microsecond=0)
         next_date_ts = int(next_date.timestamp())
