@@ -89,10 +89,10 @@ def update_day_ahead_prices(country_code, resolution):
         ts     = get_dayahead_prices(ENTSOE_KEY, country_code, start, end, resolution)
         data   = ts.to_list()
         # Check if data has valid number of entries
-        if resolution == '15min' and len(data) < 23*4:
+        if resolution == 'PT15M' and len(data) < 23*4:
             logging.warning("Invalid number of entries for 15min: {0}".format(len(data)))
             return None
-        if resolution == '60min' and len(data) < 23:
+        if resolution == 'PT60M' and len(data) < 23:
             logging.warning("Invalid number of entries for 60min: {0}".format(len(data)))
             return None
 
@@ -100,7 +100,7 @@ def update_day_ahead_prices(country_code, resolution):
         first_date_ts = int(start.timestamp())
         prices = [int(i*100) for i in data]
         # If we got day ahead prices ask again tomorrow, else ask again today
-        if (resolution == '15min' and len(data) < 25*4) or (resolution == '60min' and len(data) < 25):
+        if (resolution == 'PT15M' and len(data) < 25*4) or (resolution == 'PT60M' and len(data) < 25):
             next_date = start.replace(hour=13, minute=30, second=0, microsecond=0)
         else:
             next_date = (start + timedelta(days=1)).replace(hour=13, minute=30, second=0, microsecond=0)
