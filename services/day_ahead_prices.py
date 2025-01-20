@@ -11,6 +11,10 @@ import time
 import json
 from collections import OrderedDict
 import re
+try:
+    from .fallback import fallback_get_prices_de_lu
+except:
+    fallback_get_prices_de_lu = None
 
 day_ahead_prices_api = Blueprint('day_ahead_prices_api', __name__)
 
@@ -94,7 +98,18 @@ def update_day_ahead_prices(country_code, resolution):
             return None
         if resolution == 'PT60M' and len(data) < 23:
             logging.warning("Invalid number of entries for 60min: {0}".format(len(data)))
-            return None
+
+            # Add fallback for DE_LU 60min data
+            if country_code == '10Y1001A1001A82H' and fallback_get_prices_de_lu == None:
+                logging.warning("Fallback not available")
+            if country_code == '10Y1001A1001A82H' and fallback_get_prices_de_lu != None:
+                logging.debug("Using fallback for DE_LU 60min data")
+                data = fallback_get_prices_de_lu(start)
+                if len(data) == 0:
+                    logging.warning("Fallback did not return any data")
+                    return None
+            else:
+                return None
 
         # convert from cent in float to centicent in int
         first_date_ts = int(start.timestamp())
@@ -125,7 +140,7 @@ def update_day_ahead_prices_with_retry(country_code, resolution, retries=5):
         value = update_day_ahead_prices(country_code, resolution)
         if value != None:
             return value
-        # Wait one minute more with every retry 
+        # Wait one minute more with every retry
         time.sleep(60*retry)
     return DAY_AHEAD_PRICE_NOT_FOUND
 
