@@ -78,7 +78,7 @@ def parse_timeseries(xml_text, resolution, value_key='price.amount'):
 def get_dayahead_prices(api_key: str, area_code: str, start: datetime, end: datetime, resolution: str):
     fmt = '%Y%m%d%H00'  # Minutes must be 00, otherwise "HTTP 400 bad request" is returned.
     url = f'https://web-api.tp.entsoe.eu/api?securityToken={api_key}&documentType=A44&in_Domain={area_code}' \
-          f'&out_Domain={area_code}&periodStart={start.strftime(fmt)}&periodEnd={end.strftime(fmt)}'
+          f'&out_Domain={area_code}&periodStart={start.strftime(fmt)}&periodEnd={end.strftime(fmt)}&classificationSequence_AttributeInstanceComponent.Position=1'
 
     with urlopen(url) as response:  # Raises URLError
         if response.status != 200:
