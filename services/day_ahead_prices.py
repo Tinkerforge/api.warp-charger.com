@@ -69,6 +69,10 @@ def parse_timeseries(xml_text, resolution, value_key='price.amount'):
     ts = pd.Series(data=values,index=time_stamps)
     if len(ts) == 0:
         return ts
+
+    # Deduplicate labels. We could also use ts.groupby(ts.index).mean()
+    # Currently the data just seems to be duplicated with same prices for AT... no idea what is going on.
+    ts = ts[~ts.index.duplicated(keep='first')]
     return ts.resample(pdres).ffill()
 
 def get_dayahead_prices(api_key: str, area_code: str, start: datetime, end: datetime, resolution: str):
