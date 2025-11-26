@@ -33,7 +33,7 @@ DAY_AHEAD_PRICE_AT_60MIN    = 3
 
 def daps():
     yield DAY_AHEAD_PRICE_DE_LU_15MIN, '10Y1001A1001A82H', 'PT15M' # DE_LU
-    yield DAY_AHEAD_PRICE_DE_LU_60MIN, '10Y1001A1001A82H', 'PT60M' # DE_LU
+#    yield DAY_AHEAD_PRICE_DE_LU_60MIN, '10Y1001A1001A82H', 'PT60M' # DE_LU
     yield DAY_AHEAD_PRICE_AT_15MIN,    '10YAT-APG------L', 'PT15M' # AT
 #    yield DAY_AHEAD_PRICE_AT_60MIN,    '10YAT-APG------L', 'PT60M' # AT
 
@@ -77,6 +77,7 @@ def parse_timeseries(xml_text, resolution, value_key='price.amount'):
 
 def get_dayahead_prices(api_key: str, area_code: str, start: datetime, end: datetime, resolution: str):
     fmt = '%Y%m%d%H00'  # Minutes must be 00, otherwise "HTTP 400 bad request" is returned.
+    # &classificationSequence_AttributeInstanceComponent.Position=1 => sequence 1 = SDAC prices is correct (2 would be EXAA, is not correct)
     url = f'https://web-api.tp.entsoe.eu/api?securityToken={api_key}&documentType=A44&in_Domain={area_code}' \
           f'&out_Domain={area_code}&periodStart={start.strftime(fmt)}&periodEnd={end.strftime(fmt)}&classificationSequence_AttributeInstanceComponent.Position=1'
 
