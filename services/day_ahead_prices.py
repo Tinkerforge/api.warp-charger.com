@@ -98,23 +98,22 @@ def update_day_ahead_prices(country_code, resolution):
         ts     = get_dayahead_prices(ENTSOE_KEY, country_code, start, end, resolution)
         data   = ts.to_list()
         # Check if data has valid number of entries
-        if resolution == 'PT15M' and len(data) < 23*4:
-            logging.warning("Invalid number of entries for 15min: {0}".format(len(data)))
-            return None
+        if resolution == 'PT15M':
+            # Always try fallback if we did not get enough data for full two days (today + tomorrow)
+            if len(data) < (24+23)*4 and country_code == '10Y1001A1001A82H' and fallback_get_prices_de_lu != None:
+                logging.debug("Trying fallback for DE_LU 15min data")
+                fallback_data = fallback_get_prices_de_lu(start)
+                if len(fallback_data) > len(data):
+                    data = fallback_data
+                    logging.debug("Using fallback data for DE_LU 15min data")
+                else:
+                    logging.warning("Fallback did not return more data")
+                    return None
         if resolution == 'PT60M' and len(data) < 23:
             logging.warning("Invalid number of entries for 60min: {0}".format(len(data)))
 
-            # Add fallback for DE_LU 60min data
-            if country_code == '10Y1001A1001A82H' and fallback_get_prices_de_lu == None:
-                logging.warning("Fallback not available")
-            if country_code == '10Y1001A1001A82H' and fallback_get_prices_de_lu != None:
-                logging.debug("Using fallback for DE_LU 60min data")
-                data = fallback_get_prices_de_lu(start)
-                if len(data) == 0:
-                    logging.warning("Fallback did not return any data")
-                    return None
-            else:
-                return None
+            # Fallback no longer used for 60min data
+            return None
 
         # convert from cent in float to centicent in int
         first_date_ts = int(start.timestamp())
