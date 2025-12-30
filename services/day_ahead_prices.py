@@ -99,16 +99,17 @@ def update_day_ahead_prices(country_code, resolution):
         data   = ts.to_list()
         # Check if data has valid number of entries
         if resolution == 'PT15M':
-            # Always try fallback if we did not get enough data for full two days (today + tomorrow)
-            if len(data) < (24+23)*4 and country_code == '10Y1001A1001A82H' and fallback_get_prices_de_lu != None:
-                logging.debug("Trying fallback for DE_LU 15min data")
-                fallback_data = fallback_get_prices_de_lu(start)
-                if len(fallback_data) > len(data):
-                    data = fallback_data
-                    logging.debug("Using fallback data for DE_LU 15min data")
-                else:
-                    logging.warning("Fallback did not return more data")
-                    return None
+            # Only use fallback after 15:00, there is not enough data after that time, something is wrong with entso-e
+            current_hour = pd.Timestamp.now(tz='Europe/Berlin').hour
+            if (country_code == '10Y1001A1001A82H') and (fallback_get_prices_de_lu != None)
+                if (len(data) < (23*24)) or ((len(data) < (24+23)*4) and (current_hour >= 15)):
+                    logging.debug("Trying fallback for DE_LU 15min data")
+                    fallback_data = fallback_get_prices_de_lu(start)
+                    if len(fallback_data) > len(data):
+                        data = fallback_data
+                        logging.debug("Using Tibber fallback data for DE_LU 15min data")
+                    else:
+                        logging.warning("Tibber fallback did not return more data")
         if resolution == 'PT60M' and len(data) < 23:
             logging.warning("Invalid number of entries for 60min: {0}".format(len(data)))
 
