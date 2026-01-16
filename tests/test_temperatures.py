@@ -117,13 +117,11 @@ class TestTemperaturesAPI(unittest.TestCase):
             self.assertIn('date', data['today'])
             self.assertIn('min', data['today'])
             self.assertIn('max', data['today'])
-            self.assertIn('avg', data['today'])
 
             # Check tomorrow structure
             self.assertIn('date', data['tomorrow'])
             self.assertIn('min', data['tomorrow'])
             self.assertIn('max', data['tomorrow'])
-            self.assertIn('avg', data['tomorrow'])
 
     def test_successful_response_values(self):
         """Test that response values are correctly extracted from API data."""
@@ -142,29 +140,11 @@ class TestTemperaturesAPI(unittest.TestCase):
             self.assertEqual(data['today']['date'], 1700000000)
             self.assertEqual(data['today']['min'], 2.0)
             self.assertEqual(data['today']['max'], 8.0)
-            self.assertEqual(data['today']['avg'], 5.0)  # (2 + 8) / 2
 
             # Check tomorrow values
             self.assertEqual(data['tomorrow']['date'], 1700086400)
             self.assertEqual(data['tomorrow']['min'], -1.0)
             self.assertEqual(data['tomorrow']['max'], 5.0)
-            self.assertEqual(data['tomorrow']['avg'], 2.0)  # (-1 + 5) / 2
-
-    def test_average_calculation_rounding(self):
-        """Test that average is correctly rounded to 1 decimal place."""
-        with patch('services.temperatures.fetch_temperature_forecast') as mock_fetch:
-            # 3.3 + 7.8 = 11.1 / 2 = 5.55 -> should round to 5.5 or 5.6
-            mock_data = self._mock_open_meteo_response(
-                today_min=3.3, today_max=7.8,
-                tomorrow_min=0.0, tomorrow_max=0.0
-            )
-            mock_fetch.return_value = mock_data
-
-            response = self.client.get('/v1/temperatures/52.52/13.41')
-            data = json.loads(response.data)
-
-            # (3.3 + 7.8) / 2 = 5.55, rounded to 5.5 or 5.6
-            self.assertIn(data['today']['avg'], [5.5, 5.6])
 
     def test_negative_temperatures(self):
         """Test that negative temperatures are handled correctly."""
@@ -180,7 +160,6 @@ class TestTemperaturesAPI(unittest.TestCase):
 
             self.assertEqual(data['today']['min'], -15.5)
             self.assertEqual(data['today']['max'], -5.0)
-            self.assertEqual(data['today']['avg'], -10.2)  # (-15.5 + -5.0) / 2 = -10.25 -> -10.2
 
     # -------------------------------------------------------------------------
     # Error Handling Tests
@@ -308,7 +287,7 @@ class TestFormatTemperatureResponse(unittest.TestCase):
         # Within each day, date should come first
         parsed = json.loads(result)
         today_keys = list(parsed['today'].keys())
-        self.assertEqual(today_keys, ['date', 'min', 'max', 'avg'])
+        self.assertEqual(today_keys, ['date', 'min', 'max'])
 
 
 class TestFetchTemperatureForecast(unittest.TestCase):

@@ -42,15 +42,10 @@ def format_temperature_response(data: dict) -> str:
         raise ValueError("Insufficient forecast data received")
 
     def day_data(idx):
-        tmin = temp_min[idx]
-        tmax = temp_max[idx]
-        # Calculate average as midpoint of min and max
-        tavg = round((tmin + tmax) / 2, 1)
         od = OrderedDict()
         od['date'] = times[idx]
-        od['min'] = tmin
-        od['max'] = tmax
-        od['avg'] = tavg
+        od['min'] = temp_min[idx]
+        od['max'] = temp_max[idx]
         return od
 
     result = OrderedDict()
