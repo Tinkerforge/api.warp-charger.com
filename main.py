@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from services import day_ahead_prices
+from services import day_ahead_prices, temperatures
 from flask import Flask, Blueprint
 import logging
 import os
 import threading
 import time
 
-DEFAULT_PORT = 5000
+DEFAULT_PORT = 5002
 
 main_api = Blueprint('main_api', __name__)
 @main_api.route("/")
@@ -31,6 +31,7 @@ def backend_tasks():
 app = Flask(__name__)
 app.register_blueprint(main_api)
 app.register_blueprint(day_ahead_prices.day_ahead_prices_api)
+app.register_blueprint(temperatures.temperatures_api)
 app.config["JSON_SORT_KEYS"] = False
 
 port = int(os.environ.get('PORT', DEFAULT_PORT))
