@@ -1,2 +1,4 @@
 entsoe.key
 venv
+__pycache__
+debug.log
