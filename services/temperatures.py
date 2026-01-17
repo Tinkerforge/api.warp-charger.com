@@ -22,7 +22,7 @@ def fetch_temperature_forecast(lat: float, lon: float) -> dict:
         f"?latitude={lat}"
         f"&longitude={lon}"
         f"&daily=temperature_2m_max,temperature_2m_min"
-        f"&timezone=auto"
+        f"&timezone=UTC"
         f"&forecast_days=2"
         f"&timeformat=unixtime"
     )

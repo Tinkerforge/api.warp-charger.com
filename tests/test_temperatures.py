@@ -318,7 +318,7 @@ class TestFetchTemperatureForecast(unittest.TestCase):
             self.assertIn('latitude=52.52', url)
             self.assertIn('longitude=13.41', url)
             self.assertIn('daily=temperature_2m_max,temperature_2m_min', url)
-            self.assertIn('timezone=auto', url)
+            self.assertIn('timezone=UTC', url)
             self.assertIn('forecast_days=2', url)
             self.assertIn('timeformat=unixtime', url)
 
