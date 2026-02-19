@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from services import day_ahead_prices, temperatures
-from flask import Flask, Blueprint
+from flask import Flask, Blueprint, render_template
 import logging
 import os
 import threading
@@ -13,7 +13,7 @@ DEFAULT_PORT = 5002
 main_api = Blueprint('main_api', __name__)
 @main_api.route("/")
 def home():
-    return "<html>This is api.warp-charger.com.</br>This API is used by WARP Chargers to obtain relevant public information like day ahead prices.</html>"
+    return render_template('index.html')
 
 def backend_tasks():
     global running

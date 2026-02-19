@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>api.warp-charger.com</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#111;color:#ccc;line-height:1.6;padding:2rem;max-width:52rem;margin:0 auto}
+h1{color:#eee;font-size:1.6rem;margin-bottom:.25rem}
+.subtitle{color:#888;margin-bottom:2.5rem;font-size:.95rem}
+h2{color:#ddd;font-size:1.15rem;margin:2rem 0 .75rem;padding-bottom:.35rem;border-bottom:1px solid #333}
+h3{color:#ccc;font-size:.95rem;margin:1.25rem 0 .5rem}
+p{margin-bottom:.75rem}
+a{color:#6cb4ee;text-decoration:none}
+a:hover{text-decoration:underline}
+code{font-family:"SF Mono",Monaco,Consolas,"Liberation Mono",monospace;font-size:.85em;background:#1a1a1a;padding:.15em .35em;border-radius:3px;color:#e0e0e0}
+pre{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:6px;padding:1rem;overflow-x:auto;margin:.75rem 0 1.25rem;font-size:.85rem;line-height:1.5}
+pre code{background:none;padding:0;color:#ccc}
+.endpoint{margin-bottom:1.75rem}
+.method{color:#8bc78b;font-weight:600}
+.url{color:#e0e0e0}
+.param-table{width:100%;border-collapse:collapse;margin:.75rem 0;font-size:.9rem}
+.param-table th{text-align:left;padding:.4rem .75rem;border-bottom:1px solid #333;color:#999;font-weight:500}
+.param-table td{padding:.4rem .75rem;border-bottom:1px solid #222}
+.param-table td:first-child{color:#e0c080;font-family:"SF Mono",Monaco,Consolas,monospace;font-size:.85em;white-space:nowrap}
+.note{color:#999;font-size:.85rem;margin-top:.25rem}
+.comment{color:#6a9955}
+.string{color:#ce9178}
+.number{color:#b5cea8}
+footer{margin-top:3rem;padding-top:1rem;border-top:1px solid #222;color:#555;font-size:.8rem}
+</style>
+</head>
+<body>
+<h1>api.warp-charger.com</h1>
+<p class="subtitle">Public API used by WARP Chargers and Energy Managers to obtain day-ahead electricity prices and temperature forecasts.</p>
+
+<h2>Endpoints</h2>
+
+<div class="endpoint">
+<h3><span class="method">GET</span> <span class="url">/v1/day_ahead_prices/&lt;country&gt;/&lt;resolution&gt;</span></h3>
+<p>Returns day-ahead electricity spot prices from the ENTSO-E Transparency Platform.</p>
+<table class="param-table">
+<tr><th>Parameter</th><th>Values</th><th>Description</th></tr>
+<tr><td>country</td><td><code>de</code>, <code>lu</code>, <code>at</code></td><td>Bidding zone (DE/LU share a zone)</td></tr>
+<tr><td>resolution</td><td><code>15min</code>, <code>60min</code></td><td>Price interval granularity</td></tr>
+</table>
+
+<p><strong>Example</strong></p>
+<pre><code>curl https://api.warp-charger.com/v1/day_ahead_prices/de/15min</code></pre>
+
+<p><strong>Response</strong></p>
+<pre><code>{
+  <span class="string">"first_date"</span>: <span class="number">1771455600</span>,  <span class="comment">// start timestamp (UTC)</span>
+  <span class="string">"prices"</span>: [<span class="number">8780</span>, <span class="number">8330</span>, <span class="number">...</span>],   <span class="comment">// centicent/MWh (1/100 ct/kWh = price * 0.00001 EUR/kWh)</span>
+  <span class="string">"next_date"</span>: <span class="number">1771590600</span>  <span class="comment">// when to fetch again (UTC)</span>
+}</code></pre>
+<p class="note">Prices are integers in centicent per MWh. To convert to EUR/kWh: multiply by 0.00001. Data typically covers today plus the next day (available after ~13:00 CET).</p>
+</div>
+
+<div class="endpoint">
+<h3><span class="method">GET</span> <span class="url">/v1/temperatures/&lt;lat&gt;/&lt;lon&gt;</span></h3>
+<p>Returns min/max temperature forecast for today and tomorrow (DWD ICON model via Open-Meteo).</p>
+<table class="param-table">
+<tr><th>Parameter</th><th>Range</th><th>Description</th></tr>
+<tr><td>lat</td><td><code>-90</code> to <code>90</code></td><td>Latitude (decimal degrees)</td></tr>
+<tr><td>lon</td><td><code>-180</code> to <code>180</code></td><td>Longitude (decimal degrees)</td></tr>
+</table>
+
+<p><strong>Example</strong></p>
+<pre><code>curl https://api.warp-charger.com/v1/temperatures/51.93/8.63</code></pre>
+
+<p><strong>Response</strong></p>
+<pre><code>{
+  <span class="string">"today"</span>: {<span class="string">"date"</span>: <span class="number">1771369200</span>, <span class="string">"min"</span>: <span class="number">8.2</span>, <span class="string">"max"</span>: <span class="number">14.7</span>},
+  <span class="string">"tomorrow"</span>: {<span class="string">"date"</span>: <span class="number">1771455600</span>, <span class="string">"min"</span>: <span class="number">7.1</span>, <span class="string">"max"</span>: <span class="number">13.9</span>}
+}</code></pre>
+<p class="note">Temperatures in degrees Celsius. Dates are UTC unix timestamps for the start of each day.</p>
+</div>
+
+<h2>Errors</h2>
+<p>All errors are returned as JSON with an <code>error</code> field and an appropriate HTTP status code.</p>
+<pre><code>{<span class="string">"error"</span>: <span class="string">"Data not found"</span>}     <span class="comment">// 404</span>
+{<span class="string">"error"</span>: <span class="string">"Country not supported"</span>} <span class="comment">// 400</span></code></pre>
+
+<footer>Part of the WARP Charger ecosystem &mdash; <a href="https://www.warp-charger.com">warp-charger.com</a> &mdash; <a href="https://github.com/Tinkerforge/api.warp-charger.com">Source on GitHub</a></footer>
+</body>
+</html>

@@ -1,7 +1,102 @@
 api.warp-charger.com
 ====================
 
-TBD
+Public API server used by WARP Chargers and Energy Managers to obtain
+day-ahead electricity prices and temperature forecasts.
+
+Live at https://api.warp-charger.com
+
+
+API Endpoints
+-------------
+
+Day-Ahead Prices
+~~~~~~~~~~~~~~~~
+
+::
+
+    GET /v1/day_ahead_prices/<country>/<resolution>
+
+Returns day-ahead electricity spot prices sourced from the ENTSO-E
+Transparency Platform.
+
+============== ========================= =========================================
+Parameter      Values                    Description
+============== ========================= =========================================
+``country``    ``de``, ``lu``, ``at``     Bidding zone (DE and LU share a zone)
+``resolution`` ``15min``, ``60min``       Price interval granularity
+============== ========================= =========================================
+
+Example::
+
+    curl https://api.warp-charger.com/v1/day_ahead_prices/de/15min
+
+Response::
+
+    {
+      "first_date": 1771455600,
+      "prices": [8780, 8330, ...],
+      "next_date": 1771590600
+    }
+
+- ``first_date`` -- UTC unix timestamp of the first price interval
+- ``prices`` -- array of integers in centicent/MWh (multiply by 0.00001 for EUR/kWh)
+- ``next_date`` -- UTC unix timestamp indicating when fresh data should be available
+
+Temperature Forecast
+~~~~~~~~~~~~~~~~~~~~
+
+::
+
+    GET /v1/temperatures/<lat>/<lon>
+
+Returns min/max temperature forecast for today and tomorrow using the
+DWD ICON model (via Open-Meteo).
+
+=========== =================== ============================
+Parameter   Range               Description
+=========== =================== ============================
+``lat``     ``-90`` to ``90``   Latitude (decimal degrees)
+``lon``     ``-180`` to ``180`` Longitude (decimal degrees)
+=========== =================== ============================
+
+Example::
+
+    curl https://api.warp-charger.com/v1/temperatures/51.93/8.63
+
+Response::
+
+    {
+      "today":    {"date": 1771369200, "min": 8.2, "max": 14.7},
+      "tomorrow": {"date": 1771455600, "min": 7.1, "max": 13.9}
+    }
+
+Temperatures are in degrees Celsius.
+
+
+Setup
+-----
+
+::
+
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+
+An ENTSO-E API key must be placed in ``entsoe.key`` (single line, no
+trailing newline).
+
+Run in development mode::
+
+    python main.py
+
+Run in production (behind a reverse proxy)::
+
+    ./start.sh
+
+Tests::
+
+    ./run_all_tests.sh
 
 Repository Overview
 -------------------
