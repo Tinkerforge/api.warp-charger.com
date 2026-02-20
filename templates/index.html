@@ -61,7 +61,7 @@ footer{margin-top:3rem;padding-top:1rem;border-top:1px solid #222;color:#555;fon
 
 <div class="endpoint">
 <h3><span class="method">GET</span> <span class="url">/v1/temperatures/&lt;lat&gt;/&lt;lon&gt;</span></h3>
-<p>Returns min/max temperature forecast for today and tomorrow (DWD ICON model via Open-Meteo).</p>
+<p>Returns min/max/avg temperature forecast for today and tomorrow (DWD ICON model via Open-Meteo). The average is computed from 24 hourly temperature values.</p>
 <table class="param-table">
 <tr><th>Parameter</th><th>Range</th><th>Description</th></tr>
 <tr><td>lat</td><td><code>-90</code> to <code>90</code></td><td>Latitude (decimal degrees)</td></tr>
@@ -73,10 +73,10 @@ footer{margin-top:3rem;padding-top:1rem;border-top:1px solid #222;color:#555;fon
 
 <p><strong>Response</strong></p>
 <pre><code>{
-  <span class="string">"today"</span>: {<span class="string">"date"</span>: <span class="number">1771369200</span>, <span class="string">"min"</span>: <span class="number">8.2</span>, <span class="string">"max"</span>: <span class="number">14.7</span>},
-  <span class="string">"tomorrow"</span>: {<span class="string">"date"</span>: <span class="number">1771455600</span>, <span class="string">"min"</span>: <span class="number">7.1</span>, <span class="string">"max"</span>: <span class="number">13.9</span>}
+  <span class="string">"today"</span>: {<span class="string">"date"</span>: <span class="number">1771369200</span>, <span class="string">"min"</span>: <span class="number">8.2</span>, <span class="string">"max"</span>: <span class="number">14.7</span>, <span class="string">"avg"</span>: <span class="number">11.3</span>},
+  <span class="string">"tomorrow"</span>: {<span class="string">"date"</span>: <span class="number">1771455600</span>, <span class="string">"min"</span>: <span class="number">7.1</span>, <span class="string">"max"</span>: <span class="number">13.9</span>, <span class="string">"avg"</span>: <span class="number">10.2</span>}
 }</code></pre>
-<p class="note">Temperatures in degrees Celsius. Dates are UTC unix timestamps for the start of each day.</p>
+<p class="note">Temperatures in degrees Celsius. Dates are UTC unix timestamps for the start of each day. The <code>avg</code> field is the mean of 24 hourly temperature values.</p>
 </div>
 
 <h2>Errors</h2>

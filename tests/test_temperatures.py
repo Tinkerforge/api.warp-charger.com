@@ -117,19 +117,25 @@ class TestTemperaturesAPI(unittest.TestCase):
             self.assertIn('date', data['today'])
             self.assertIn('min', data['today'])
             self.assertIn('max', data['today'])
+            self.assertIn('avg', data['today'])
 
             # Check tomorrow structure
             self.assertIn('date', data['tomorrow'])
             self.assertIn('min', data['tomorrow'])
             self.assertIn('max', data['tomorrow'])
+            self.assertIn('avg', data['tomorrow'])
 
     def test_successful_response_values(self):
         """Test that response values are correctly extracted from API data."""
         with patch('services.temperatures.fetch_temperature_forecast') as mock_fetch:
+            # Use uniform hourly temps so avg is predictable
+            today_hourly = [5.0] * 24    # avg = 5.0
+            tomorrow_hourly = [2.0] * 24  # avg = 2.0
             mock_data = self._mock_open_meteo_response(
                 today_min=2.0, today_max=8.0,
                 tomorrow_min=-1.0, tomorrow_max=5.0,
-                today_date=1700000000, tomorrow_date=1700086400
+                today_date=1700000000, tomorrow_date=1700086400,
+                today_hourly=today_hourly, tomorrow_hourly=tomorrow_hourly
             )
             mock_fetch.return_value = mock_data
 
@@ -140,11 +146,13 @@ class TestTemperaturesAPI(unittest.TestCase):
             self.assertEqual(data['today']['date'], 1700000000)
             self.assertEqual(data['today']['min'], 2.0)
             self.assertEqual(data['today']['max'], 8.0)
+            self.assertEqual(data['today']['avg'], 5.0)
 
             # Check tomorrow values
             self.assertEqual(data['tomorrow']['date'], 1700086400)
             self.assertEqual(data['tomorrow']['min'], -1.0)
             self.assertEqual(data['tomorrow']['max'], 5.0)
+            self.assertEqual(data['tomorrow']['avg'], 2.0)
 
     def test_negative_temperatures(self):
         """Test that negative temperatures are handled correctly."""
@@ -211,7 +219,7 @@ class TestTemperaturesAPI(unittest.TestCase):
             self.assertEqual(data['error'], 'Weather service unavailable')
 
     def test_insufficient_forecast_data(self):
-        """Test handling when API returns insufficient data."""
+        """Test handling when API returns insufficient daily data."""
         with patch('services.temperatures.fetch_temperature_forecast') as mock_fetch:
             # Return data with only 1 day instead of 2
             mock_fetch.return_value = {
@@ -219,6 +227,30 @@ class TestTemperaturesAPI(unittest.TestCase):
                     'time': [1700000000],  # Only 1 day
                     'temperature_2m_max': [8.0],
                     'temperature_2m_min': [2.0]
+                },
+                'hourly': {
+                    'time': [1700000000 + i * 3600 for i in range(24)],
+                    'temperature_2m': [5.0] * 24
+                }
+            }
+
+            response = self.client.get('/v1/temperatures/52.52/13.41')
+            self.assertEqual(response.status_code, 503)
+            data = json.loads(response.data)
+            self.assertEqual(data['error'], 'Invalid response from weather service')
+
+    def test_insufficient_hourly_data(self):
+        """Test handling when API returns insufficient hourly data."""
+        with patch('services.temperatures.fetch_temperature_forecast') as mock_fetch:
+            mock_fetch.return_value = {
+                'daily': {
+                    'time': [1700000000, 1700086400],
+                    'temperature_2m_max': [8.0, 5.0],
+                    'temperature_2m_min': [2.0, -1.0]
+                },
+                'hourly': {
+                    'time': [1700000000 + i * 3600 for i in range(20)],
+                    'temperature_2m': [5.0] * 20  # Only 20 values, need 48
                 }
             }
 
@@ -243,8 +275,18 @@ class TestTemperaturesAPI(unittest.TestCase):
 
     def _mock_open_meteo_response(self, today_min=2.0, today_max=8.0,
                                    tomorrow_min=-1.0, tomorrow_max=5.0,
-                                   today_date=1700000000, tomorrow_date=1700086400):
-        """Create a mock Open-Meteo API response."""
+                                   today_date=1700000000, tomorrow_date=1700086400,
+                                   today_hourly=None, tomorrow_hourly=None):
+        """Create a mock Open-Meteo API response with hourly data."""
+        # Default hourly: linear ramp from min to max and back for a simple pattern
+        if today_hourly is None:
+            today_hourly = [today_min + (today_max - today_min) * (i / 23.0) for i in range(24)]
+        if tomorrow_hourly is None:
+            tomorrow_hourly = [tomorrow_min + (tomorrow_max - tomorrow_min) * (i / 23.0) for i in range(24)]
+
+        hourly_temps = today_hourly + tomorrow_hourly
+        hourly_times = [today_date + i * 3600 for i in range(48)]
+
         return {
             'latitude': 52.52,
             'longitude': 13.419998,
@@ -262,6 +304,14 @@ class TestTemperaturesAPI(unittest.TestCase):
                 'time': [today_date, tomorrow_date],
                 'temperature_2m_max': [today_max, tomorrow_max],
                 'temperature_2m_min': [today_min, tomorrow_min]
+            },
+            'hourly_units': {
+                'time': 'unixtime',
+                'temperature_2m': '°C'
+            },
+            'hourly': {
+                'time': hourly_times,
+                'temperature_2m': hourly_temps
             }
         }
 
@@ -271,11 +321,16 @@ class TestFormatTemperatureResponse(unittest.TestCase):
 
     def test_format_response_order(self):
         """Test that JSON keys are in correct order."""
+        hourly_temps = [5.0] * 48  # 24 per day
         data = {
             'daily': {
                 'time': [1700000000, 1700086400],
                 'temperature_2m_max': [8.0, 5.0],
                 'temperature_2m_min': [2.0, -1.0]
+            },
+            'hourly': {
+                'time': [1700000000 + i * 3600 for i in range(48)],
+                'temperature_2m': hourly_temps
             }
         }
         result = format_temperature_response(data)
@@ -284,10 +339,10 @@ class TestFormatTemperatureResponse(unittest.TestCase):
         # today should come before tomorrow
         self.assertLess(result.find('"today"'), result.find('"tomorrow"'))
 
-        # Within each day, date should come first
+        # Within each day, date should come first, then min, max, avg
         parsed = json.loads(result)
         today_keys = list(parsed['today'].keys())
-        self.assertEqual(today_keys, ['date', 'min', 'max'])
+        self.assertEqual(today_keys, ['date', 'min', 'max', 'avg'])
 
 
 class TestFetchTemperatureForecast(unittest.TestCase):
@@ -318,6 +373,7 @@ class TestFetchTemperatureForecast(unittest.TestCase):
             self.assertIn('latitude=52.52', url)
             self.assertIn('longitude=13.41', url)
             self.assertIn('daily=temperature_2m_max,temperature_2m_min', url)
+            self.assertIn('hourly=temperature_2m', url)
             self.assertIn('timezone=UTC', url)
             self.assertIn('forecast_days=2', url)
             self.assertIn('timeformat=unixtime', url)

@@ -50,8 +50,9 @@ Temperature Forecast
 
     GET /v1/temperatures/<lat>/<lon>
 
-Returns min/max temperature forecast for today and tomorrow using the
-DWD ICON model (via Open-Meteo).
+Returns min/max/avg temperature forecast for today and tomorrow using the
+DWD ICON model (via Open-Meteo). The average is computed from 24 hourly
+temperature values.
 
 =========== =================== ============================
 Parameter   Range               Description
@@ -67,11 +68,12 @@ Example::
 Response::
 
     {
-      "today":    {"date": 1771369200, "min": 8.2, "max": 14.7},
-      "tomorrow": {"date": 1771455600, "min": 7.1, "max": 13.9}
+      "today":    {"date": 1771369200, "min": 8.2, "max": 14.7, "avg": 11.3},
+      "tomorrow": {"date": 1771455600, "min": 7.1, "max": 13.9, "avg": 10.2}
     }
 
-Temperatures are in degrees Celsius.
+Temperatures are in degrees Celsius. The ``avg`` field is the mean of 24
+hourly temperature values for the day.
 
 
 Setup

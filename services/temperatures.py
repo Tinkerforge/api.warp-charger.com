@@ -22,6 +22,7 @@ def fetch_temperature_forecast(lat: float, lon: float) -> dict:
         f"?latitude={lat}"
         f"&longitude={lon}"
         f"&daily=temperature_2m_max,temperature_2m_min"
+        f"&hourly=temperature_2m"
         f"&timezone=UTC"
         f"&forecast_days=2"
         f"&timeformat=unixtime"
@@ -41,11 +42,24 @@ def format_temperature_response(data: dict) -> str:
     if len(times) < 2 or len(temp_max) < 2 or len(temp_min) < 2:
         raise ValueError("Insufficient forecast data received")
 
+    # Compute daily averages from hourly temperature data (24 values per day)
+    hourly = data.get('hourly', {})
+    hourly_temps = hourly.get('temperature_2m', [])
+
+    if len(hourly_temps) < 48:
+        raise ValueError("Insufficient hourly data received")
+
+    def day_avg(day_idx):
+        start = day_idx * 24
+        day_temps = hourly_temps[start:start + 24]
+        return round(sum(day_temps) / len(day_temps), 1)
+
     def day_data(idx):
         od = OrderedDict()
         od['date'] = times[idx]
         od['min'] = temp_min[idx]
         od['max'] = temp_max[idx]
+        od['avg'] = day_avg(idx)
         return od
 
     result = OrderedDict()
