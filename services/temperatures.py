@@ -5,7 +5,6 @@ import json
 from urllib.request import urlopen
 from urllib.error import URLError, HTTPError
 from flask import Blueprint
-from datetime import datetime, timezone
 from collections import OrderedDict
 
 temperatures_api = Blueprint('temperatures_api', __name__)
@@ -21,9 +20,8 @@ def fetch_temperature_forecast(lat: float, lon: float) -> dict:
         f"{OPEN_METEO_BASE_URL}"
         f"?latitude={lat}"
         f"&longitude={lon}"
-        f"&daily=temperature_2m_max,temperature_2m_min"
         f"&hourly=temperature_2m"
-        f"&timezone=UTC"
+        f"&timezone=auto"
         f"&forecast_days=2"
         f"&timeformat=unixtime"
     )
@@ -34,48 +32,28 @@ def fetch_temperature_forecast(lat: float, lon: float) -> dict:
         return json.loads(response.read().decode())
 
 def format_temperature_response(data: dict) -> str:
-    daily = data.get('daily', {})
-    times = daily.get('time', [])
-    temp_max = daily.get('temperature_2m_max', [])
-    temp_min = daily.get('temperature_2m_min', [])
-
-    if len(times) < 2 or len(temp_max) < 2 or len(temp_min) < 2:
-        raise ValueError("Insufficient forecast data received")
-
-    # Compute daily averages from hourly temperature data (24 values per day)
     hourly = data.get('hourly', {})
+    hourly_times = hourly.get('time', [])
     hourly_temps = hourly.get('temperature_2m', [])
 
-    if len(hourly_temps) < 48:
-        raise ValueError("Insufficient hourly data received")
-
-    def day_avg(day_idx):
-        start = day_idx * 24
-        day_temps = hourly_temps[start:start + 24]
-        return round(sum(day_temps) / len(day_temps), 1)
-
-    def day_data(idx):
-        od = OrderedDict()
-        od['date'] = times[idx]
-        od['min'] = temp_min[idx]
-        od['max'] = temp_max[idx]
-        od['avg'] = day_avg(idx)
-        return od
+    if len(hourly_temps) < 47 or len(hourly_times) < 47:
+        raise ValueError("Insufficient hourly data received (need at least 47)")
 
     result = OrderedDict()
-    result['today'] = day_data(0)
-    result['tomorrow'] = day_data(1)
+    result['first_date'] = hourly_times[0]
+    result['hourly'] = [round(t * 10) for t in hourly_temps]
 
     return json.dumps(result, separators=(',', ':'))
 
-# Get temperature forecast (min, max, avg) for today and tomorrow.
+# Get hourly temperature forecast for today and tomorrow.
 #
 # Parameters:
 # * lat: Latitude (-90 to 90)
 # * lon: Longitude (-180 to 180)
 #
 # Returns:
-# * JSON with today and tomorrow temperature data.
+# * JSON with first_date (UTC timestamp of local midnight) and a flat hourly
+#   array of 47-49 temperature integers in 10ths of degree Celsius.
 @temperatures_api.route('/v1/temperatures/<lat>/<lon>', methods=['GET'])
 def temperatures(lat, lon):
     def inner(lat_str, lon_str):

@@ -61,7 +61,7 @@ footer{margin-top:3rem;padding-top:1rem;border-top:1px solid #222;color:#555;fon
 
 <div class="endpoint">
 <h3><span class="method">GET</span> <span class="url">/v1/temperatures/&lt;lat&gt;/&lt;lon&gt;</span></h3>
-<p>Returns min/max/avg temperature forecast for today and tomorrow (DWD ICON model via Open-Meteo). The average is computed from 24 hourly temperature values.</p>
+<p>Returns hourly temperature forecast covering today and tomorrow (DWD ICON model via Open-Meteo). Data is aligned to local midnight of the geographic timezone derived from the coordinates.</p>
 <table class="param-table">
 <tr><th>Parameter</th><th>Range</th><th>Description</th></tr>
 <tr><td>lat</td><td><code>-90</code> to <code>90</code></td><td>Latitude (decimal degrees)</td></tr>
@@ -73,10 +73,10 @@ footer{margin-top:3rem;padding-top:1rem;border-top:1px solid #222;color:#555;fon
 
 <p><strong>Response</strong></p>
 <pre><code>{
-  <span class="string">"today"</span>: {<span class="string">"date"</span>: <span class="number">1771369200</span>, <span class="string">"min"</span>: <span class="number">8.2</span>, <span class="string">"max"</span>: <span class="number">14.7</span>, <span class="string">"avg"</span>: <span class="number">11.3</span>},
-  <span class="string">"tomorrow"</span>: {<span class="string">"date"</span>: <span class="number">1771455600</span>, <span class="string">"min"</span>: <span class="number">7.1</span>, <span class="string">"max"</span>: <span class="number">13.9</span>, <span class="string">"avg"</span>: <span class="number">10.2</span>}
+  <span class="string">"first_date"</span>: <span class="number">1771369200</span>,  <span class="comment">// UTC timestamp of local midnight today</span>
+  <span class="string">"hourly"</span>: [<span class="number">82</span>, <span class="number">79</span>, <span class="number">76</span>, <span class="number">...</span>]   <span class="comment">// 47-49 values in 10ths of &deg;C</span>
 }</code></pre>
-<p class="note">Temperatures in degrees Celsius. Dates are UTC unix timestamps for the start of each day. The <code>avg</code> field is the mean of 24 hourly temperature values.</p>
+<p class="note">Temperatures are integers in 10ths of a degree Celsius (e.g. <code>123</code> = 12.3 &deg;C). The <code>hourly</code> array contains 47&ndash;49 values (one per hour, covering today + tomorrow). Array size varies due to DST transitions: 47 (spring forward), 48 (normal), or 49 (fall back).</p>
 </div>
 
 <h2>Errors</h2>
