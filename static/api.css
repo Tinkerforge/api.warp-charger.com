@@ -1,0 +1,225 @@
+/* ==========================================================================
+   api.warp-charger.com - Custom Styles
+   Uses Bootstrap 5.3+ for base styling with custom overrides
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   CSS Custom Properties (Design Tokens)
+   -------------------------------------------------------------------------- */
+:root {
+  /* Syntax highlighting - light mode */
+  --api-comment: #6a9955;
+  --api-string: #a31515;
+  --api-number: #098658;
+
+  /* API-specific colors */
+  --api-method: #198754;
+  --api-param-name: #b07d35;
+}
+
+[data-bs-theme="dark"] {
+  /* Override Bootstrap link color for softer blue in dark mode */
+  --bs-link-color-rgb: 108, 180, 238;
+  --bs-link-color: #6cb4ee;
+  --bs-link-hover-color: #8dc4f2;
+
+  /* Syntax highlighting - dark mode (VS Code Dark+ inspired) */
+  --api-comment: #6a9955;
+  --api-string: #ce9178;
+  --api-number: #b5cea8;
+
+  /* API-specific colors */
+  --api-method: #8bc78b;
+  --api-param-name: #e0c080;
+}
+
+/* --------------------------------------------------------------------------
+   Base Layout
+   -------------------------------------------------------------------------- */
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.api-content {
+  max-width: 52rem;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  flex: 1;
+}
+
+/* --------------------------------------------------------------------------
+   Theme Toggle & Language Switcher (same pattern as vislog)
+   -------------------------------------------------------------------------- */
+.theme-toggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1050;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.theme-toggle .btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.btn-lang {
+  font-size: 0.75rem;
+  font-weight: 600;
+  width: 40px !important;
+}
+
+/* --------------------------------------------------------------------------
+   Typography & Headings
+   -------------------------------------------------------------------------- */
+h1 {
+  font-size: 1.6rem;
+  margin-bottom: 0.25rem;
+}
+
+.subtitle {
+  font-size: 0.95rem;
+  margin-bottom: 2.5rem;
+}
+
+h2 {
+  font-size: 1.15rem;
+  margin: 2rem 0 0.75rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+h3 {
+  font-size: 0.95rem;
+  margin: 1.25rem 0 0.5rem;
+}
+
+/* --------------------------------------------------------------------------
+   Inline Code & Code Blocks
+   -------------------------------------------------------------------------- */
+code {
+  font-family: "SF Mono", Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.85em;
+}
+
+pre {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 6px;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 0.75rem 0 1.25rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  color: var(--bs-body-color);
+}
+
+/* --------------------------------------------------------------------------
+   Endpoint Styling
+   -------------------------------------------------------------------------- */
+.endpoint {
+  margin-bottom: 1.75rem;
+}
+
+.method {
+  color: var(--api-method);
+  font-weight: 600;
+}
+
+.url {
+  color: var(--bs-body-color);
+}
+
+/* --------------------------------------------------------------------------
+   Parameter Tables
+   -------------------------------------------------------------------------- */
+.param-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  font-size: 0.9rem;
+}
+
+.param-table th {
+  text-align: left;
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid var(--bs-border-color);
+  color: var(--bs-secondary-color);
+  font-weight: 500;
+}
+
+.param-table td {
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.param-table td:first-child {
+  color: var(--api-param-name);
+  font-family: "SF Mono", Monaco, Consolas, monospace;
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   Syntax Highlighting (JSON examples)
+   -------------------------------------------------------------------------- */
+.comment {
+  color: var(--api-comment);
+}
+
+.string {
+  color: var(--api-string);
+}
+
+.number {
+  color: var(--api-number);
+}
+
+/* --------------------------------------------------------------------------
+   Notes
+   -------------------------------------------------------------------------- */
+.note {
+  color: var(--bs-secondary-color);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+/* --------------------------------------------------------------------------
+   Footer (matches vislog pattern)
+   -------------------------------------------------------------------------- */
+footer {
+  margin-top: auto;
+  padding: 1rem 0;
+  border-top: 1px solid var(--bs-border-color);
+  color: var(--bs-secondary-color);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.footer-legal {
+  margin-top: 0.35rem;
+  font-size: 0.7rem;
+}
+
+.footer-legal a {
+  color: var(--bs-secondary-color);
+  text-decoration: none;
+  opacity: 0.7;
+}
+
+.footer-legal a:hover {
+  text-decoration: underline;
+  opacity: 1;
+}
