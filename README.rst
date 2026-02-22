@@ -69,11 +69,11 @@ Response::
 
     {
       "first_date": 1771369200,
-      "hourly": [82, 79, 76, ...]
+      "temperatures": [82, 79, 76, ...]
     }
 
 - ``first_date`` -- UTC unix timestamp of local midnight today
-- ``hourly`` -- flat array of 47-49 integers in 10ths of a degree Celsius
+- ``temperatures`` -- flat array of 47-49 integers in 10ths of a degree Celsius
   (e.g. ``123`` = 12.3 C). Array size varies due to DST transitions:
   47 (spring forward), 48 (normal), or 49 (fall back).
 

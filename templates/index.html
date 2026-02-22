@@ -74,9 +74,9 @@ footer{margin-top:3rem;padding-top:1rem;border-top:1px solid #222;color:#555;fon
 <p><strong>Response</strong></p>
 <pre><code>{
   <span class="string">"first_date"</span>: <span class="number">1771369200</span>,  <span class="comment">// UTC timestamp of local midnight today</span>
-  <span class="string">"hourly"</span>: [<span class="number">82</span>, <span class="number">79</span>, <span class="number">76</span>, <span class="number">...</span>]   <span class="comment">// 47-49 values in 10ths of &deg;C</span>
+  <span class="string">"temperatures"</span>: [<span class="number">82</span>, <span class="number">79</span>, <span class="number">76</span>, <span class="number">...</span>]   <span class="comment">// 47-49 values in 10ths of &deg;C</span>
 }</code></pre>
-<p class="note">Temperatures are integers in 10ths of a degree Celsius (e.g. <code>123</code> = 12.3 &deg;C). The <code>hourly</code> array contains 47&ndash;49 values (one per hour, covering today + tomorrow). Array size varies due to DST transitions: 47 (spring forward), 48 (normal), or 49 (fall back).</p>
+<p class="note">Temperatures are integers in 10ths of a degree Celsius (e.g. <code>123</code> = 12.3 &deg;C). The <code>temperatures</code> array contains 47&ndash;49 values (one per hour, covering today + tomorrow). Array size varies due to DST transitions: 47 (spring forward), 48 (normal), or 49 (fall back).</p>
 </div>
 
 <h2>Errors</h2>

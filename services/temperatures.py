@@ -41,7 +41,7 @@ def format_temperature_response(data: dict) -> str:
 
     result = OrderedDict()
     result['first_date'] = hourly_times[0]
-    result['hourly'] = [round(t * 10) for t in hourly_temps]
+    result['temperatures'] = [round(t * 10) for t in hourly_temps]
 
     return json.dumps(result, separators=(',', ':'))
 
@@ -52,8 +52,8 @@ def format_temperature_response(data: dict) -> str:
 # * lon: Longitude (-180 to 180)
 #
 # Returns:
-# * JSON with first_date (UTC timestamp of local midnight) and a flat hourly
-#   array of 47-49 temperature integers in 10ths of degree Celsius.
+# * JSON with first_date (UTC timestamp of local midnight) and a flat
+#   temperatures array of 47-49 temperature integers in 10ths of degree Celsius.
 @temperatures_api.route('/v1/temperatures/<lat>/<lon>', methods=['GET'])
 def temperatures(lat, lon):
     def inner(lat_str, lon_str):

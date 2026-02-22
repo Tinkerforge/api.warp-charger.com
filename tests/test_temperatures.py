@@ -111,12 +111,12 @@ class TestTemperaturesAPI(unittest.TestCase):
 
             # Check top-level keys
             self.assertIn('first_date', data)
-            self.assertIn('hourly', data)
+            self.assertIn('temperatures', data)
             self.assertEqual(len(data), 2)
 
-            # Check hourly array
-            self.assertIsInstance(data['hourly'], list)
-            self.assertEqual(len(data['hourly']), 48)
+            # Check temperatures array
+            self.assertIsInstance(data['temperatures'], list)
+            self.assertEqual(len(data['temperatures']), 48)
 
             # Check first_date is the first timestamp
             self.assertIsInstance(data['first_date'], int)
@@ -136,9 +136,9 @@ class TestTemperaturesAPI(unittest.TestCase):
             # Check first_date
             self.assertEqual(data['first_date'], 1700000000)
 
-            # Check hourly values (5.0°C = 50 tenths, 2.0°C = 20 tenths)
-            self.assertEqual(data['hourly'][:24], [50] * 24)
-            self.assertEqual(data['hourly'][24:], [20] * 24)
+            # Check temperature values (5.0°C = 50 tenths, 2.0°C = 20 tenths)
+            self.assertEqual(data['temperatures'][:24], [50] * 24)
+            self.assertEqual(data['temperatures'][24:], [20] * 24)
 
     def test_temperatures_are_integers_in_tenths(self):
         """Test that temperatures are properly converted to integer tenths of degree."""
@@ -151,17 +151,17 @@ class TestTemperaturesAPI(unittest.TestCase):
             data = json.loads(response.data)
 
             # Check specific conversions
-            self.assertEqual(data['hourly'][0], 123)   # 12.3 * 10
-            self.assertEqual(data['hourly'][1], -57)   # -5.7 * 10
-            self.assertEqual(data['hourly'][2], 0)     # 0.0 * 10
-            self.assertEqual(data['hourly'][3], 259)   # 25.9 * 10
-            self.assertEqual(data['hourly'][4], -1)    # -0.1 * 10
-            self.assertEqual(data['hourly'][5], 1)     # 0.1 * 10
-            self.assertEqual(data['hourly'][6], -155)  # -15.5 * 10
-            self.assertEqual(data['hourly'][7], 302)   # 30.2 * 10
+            self.assertEqual(data['temperatures'][0], 123)   # 12.3 * 10
+            self.assertEqual(data['temperatures'][1], -57)   # -5.7 * 10
+            self.assertEqual(data['temperatures'][2], 0)     # 0.0 * 10
+            self.assertEqual(data['temperatures'][3], 259)   # 25.9 * 10
+            self.assertEqual(data['temperatures'][4], -1)    # -0.1 * 10
+            self.assertEqual(data['temperatures'][5], 1)     # 0.1 * 10
+            self.assertEqual(data['temperatures'][6], -155)  # -15.5 * 10
+            self.assertEqual(data['temperatures'][7], 302)   # 30.2 * 10
 
             # All values must be integers
-            for t in data['hourly']:
+            for t in data['temperatures']:
                 self.assertIsInstance(t, int)
 
     def test_negative_temperatures(self):
@@ -174,8 +174,8 @@ class TestTemperaturesAPI(unittest.TestCase):
             response = self.client.get('/v1/temperatures/52.52/13.41')
             data = json.loads(response.data)
 
-            self.assertEqual(data['hourly'][:24], [-155] * 24)
-            self.assertEqual(data['hourly'][24:], [-200] * 24)
+            self.assertEqual(data['temperatures'][:24], [-155] * 24)
+            self.assertEqual(data['temperatures'][24:], [-200] * 24)
 
     # -------------------------------------------------------------------------
     # DST Tests (variable array sizes)
@@ -190,7 +190,7 @@ class TestTemperaturesAPI(unittest.TestCase):
             response = self.client.get('/v1/temperatures/52.52/13.41')
             self.assertEqual(response.status_code, 200)
             data = json.loads(response.data)
-            self.assertEqual(len(data['hourly']), 47)
+            self.assertEqual(len(data['temperatures']), 47)
 
     def test_dst_fall_back_49_values(self):
         """Test that 49 hourly values (fall back: 25 + 24) are accepted."""
@@ -201,7 +201,7 @@ class TestTemperaturesAPI(unittest.TestCase):
             response = self.client.get('/v1/temperatures/52.52/13.41')
             self.assertEqual(response.status_code, 200)
             data = json.loads(response.data)
-            self.assertEqual(len(data['hourly']), 49)
+            self.assertEqual(len(data['temperatures']), 49)
 
     def test_normal_48_values(self):
         """Test that 48 hourly values (normal: 24 + 24) are accepted."""
@@ -212,7 +212,7 @@ class TestTemperaturesAPI(unittest.TestCase):
             response = self.client.get('/v1/temperatures/52.52/13.41')
             self.assertEqual(response.status_code, 200)
             data = json.loads(response.data)
-            self.assertEqual(len(data['hourly']), 48)
+            self.assertEqual(len(data['temperatures']), 48)
 
     # -------------------------------------------------------------------------
     # Error Handling Tests
@@ -344,7 +344,7 @@ class TestFormatTemperatureResponse(unittest.TestCase):
     """Unit tests for the format_temperature_response function."""
 
     def test_format_response_key_order(self):
-        """Test that JSON keys are in correct order: first_date, hourly."""
+        """Test that JSON keys are in correct order: first_date, temperatures."""
         hourly_temps = [5.0] * 48
         hourly_times = [1700000000 + i * 3600 for i in range(48)]
         data = {
@@ -355,12 +355,12 @@ class TestFormatTemperatureResponse(unittest.TestCase):
         }
         result = format_temperature_response(data)
 
-        # first_date should come before hourly
-        self.assertLess(result.find('"first_date"'), result.find('"hourly"'))
+        # first_date should come before temperatures
+        self.assertLess(result.find('"first_date"'), result.find('"temperatures"'))
 
         parsed = json.loads(result)
         keys = list(parsed.keys())
-        self.assertEqual(keys, ['first_date', 'hourly'])
+        self.assertEqual(keys, ['first_date', 'temperatures'])
 
     def test_format_response_array_length_48(self):
         """Test that a 48-value response preserves all values."""
@@ -375,7 +375,7 @@ class TestFormatTemperatureResponse(unittest.TestCase):
         result = format_temperature_response(data)
         parsed = json.loads(result)
 
-        self.assertEqual(len(parsed['hourly']), 48)
+        self.assertEqual(len(parsed['temperatures']), 48)
 
     def test_format_response_array_length_47(self):
         """Test that a 47-value response (spring forward) preserves all values."""
@@ -390,7 +390,7 @@ class TestFormatTemperatureResponse(unittest.TestCase):
         result = format_temperature_response(data)
         parsed = json.loads(result)
 
-        self.assertEqual(len(parsed['hourly']), 47)
+        self.assertEqual(len(parsed['temperatures']), 47)
 
     def test_format_response_array_length_49(self):
         """Test that a 49-value response (fall back) preserves all values."""
@@ -405,7 +405,7 @@ class TestFormatTemperatureResponse(unittest.TestCase):
         result = format_temperature_response(data)
         parsed = json.loads(result)
 
-        self.assertEqual(len(parsed['hourly']), 49)
+        self.assertEqual(len(parsed['temperatures']), 49)
 
     def test_format_first_date_from_hourly_times(self):
         """Test that first_date is taken from the first hourly timestamp."""
