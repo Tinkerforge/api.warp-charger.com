@@ -102,7 +102,7 @@ def update_day_ahead_prices(country_code, resolution):
             # Only use fallback after 15:00, there is not enough data after that time, something is wrong with entso-e
             current_hour = pd.Timestamp.now(tz='Europe/Berlin').hour
             if (country_code == '10Y1001A1001A82H') and (fallback_get_prices_de_lu != None):
-                if (len(data) < (23*24)) or ((len(data) < (24+23)*4) and (current_hour >= 15)):
+                if (len(data) < (23*4)) or ((len(data) < (24+23)*4) and (current_hour >= 15)):
                     logging.debug("Trying fallback for DE_LU 15min data")
                     fallback_data = fallback_get_prices_de_lu(start)
                     if len(fallback_data) > len(data):
