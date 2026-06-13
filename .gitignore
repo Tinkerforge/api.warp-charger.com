@@ -1,4 +1,8 @@
 entsoe.key
+openmeteo.key
+local_https_cert.pem
+local_https_key.pem
+local_https_cert.san
 venv
 __pycache__
 debug.log

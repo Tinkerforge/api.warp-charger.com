@@ -79,23 +79,61 @@ backend_thread.start()
 while not running:
     time.sleep(1)
 
-if __name__ == "__main__":
-    # Only scan for a free port in the main process, not in the
-    # reloader child (which inherits PORT via the environment).
-    if not os.environ.get('WERKZEUG_RUN_MAIN'):
-        while True:
-            try:
-                s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-                s.bind(('::', port))
-                s.close()
-                break
-            except OSError:
-                print(f"Port {port} already in use, trying {port + 1}")
-                port += 1
-        os.environ['PORT'] = str(port)
-        print(f" * Running on http://localhost:{port}/")
+def _find_free_port(start):
+    p = start
+    while True:
+        try:
+            s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            s.bind(('::', p))
+            s.close()
+            return p
+        except OSError:
+            print(f"Port {p} already in use, trying {p + 1}")
+            p += 1
 
-    app.run(debug=True, use_reloader=False, host="0.0.0.0", port=port)
+
+if __name__ == "__main__":
+    import local_https
+    from werkzeug.serving import make_server
+    from werkzeug.debug import DebuggedApplication
+
+    # Pick free ports for the plain-HTTP and HTTPS listeners.
+    port = _find_free_port(port)
+    os.environ['PORT'] = str(port)
+    https_port = _find_free_port(local_https.DEFAULT_HTTPS_PORT)
+
+    # Auto-generate (or reuse) a self-signed cert covering this machine's LAN IPs
+    # so an ESP32 can be told to trust it (see upload_cert.py).
+    cert_path, key_path, ips, regenerated = local_https.ensure_cert()
+
+    app.debug = True
+    wsgi = DebuggedApplication(app, evalex=True)
+
+    http_srv = make_server('0.0.0.0', port, wsgi, threaded=True)
+    https_srv = make_server('0.0.0.0', https_port, wsgi, threaded=True,
+                            ssl_context=(cert_path, key_path))
+
+    print(f" * HTTP  on http://0.0.0.0:{port}/")
+    print(f" * HTTPS on https://0.0.0.0:{https_port}/  (self-signed)")
+    if ips:
+        for ip in ips:
+            print(f"     reachable at  https://{ip}:{https_port}/")
+        print(f" * Upload the cert to an ESP32:  ./upload_cert.py <esp-ip>")
+    else:
+        print(" * Warning: no non-loopback IPv4 address detected for the HTTPS cert")
+    if regenerated:
+        print(" * (generated a fresh self-signed certificate)")
+
+    http_thread = threading.Thread(target=http_srv.serve_forever, daemon=True)
+    http_thread.start()
+    try:
+        https_srv.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        https_srv.shutdown()
+        http_srv.shutdown()
 
     running = False
     backend_thread.join()
