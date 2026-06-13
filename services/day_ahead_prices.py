@@ -31,6 +31,37 @@ DAY_AHEAD_PRICE_DE_LU_60MIN = 1
 DAY_AHEAD_PRICE_AT_15MIN    = 2
 DAY_AHEAD_PRICE_AT_60MIN    = 3
 
+DAP_NAMES = {
+    DAY_AHEAD_PRICE_DE_LU_15MIN: "de_lu_15min",
+    DAY_AHEAD_PRICE_DE_LU_60MIN: "de_lu_60min",
+    DAY_AHEAD_PRICE_AT_15MIN:    "at_15min",
+    DAY_AHEAD_PRICE_AT_60MIN:    "at_60min",
+}
+
+# Per-source health/diagnostics, populated during update().
+_health = {}
+
+def _health_for(dap):
+    h = _health.get(dap)
+    if h is None:
+        h = {
+            "last_attempt": None,        # unix ts of last update attempt
+            "last_success": None,        # unix ts data was last refreshed
+            "source_used": None,         # 'entsoe' | 'fallback' | None
+            "entsoe_entries": None,      # entries ENTSO-E returned last attempt
+            "fallback_attempted": False, # was the Tibber fallback tried last attempt
+            "fallback_entries": None,    # entries the fallback returned (or None)
+            "num_prices": None,          # entries currently served
+            "first_date": None,          # unix ts of currently served data
+            "next_date": None,           # unix ts of expected next refresh
+            "last_error": None,          # last error message
+            "last_error_at": None,       # unix ts of last error
+            "consecutive_failures": 0,
+        }
+        _health[dap] = h
+    return h
+
+
 def daps():
     yield DAY_AHEAD_PRICE_DE_LU_15MIN, '10Y1001A1001A82H', 'PT15M' # DE_LU
 #    yield DAY_AHEAD_PRICE_DE_LU_60MIN, '10Y1001A1001A82H', 'PT60M' # DE_LU
@@ -89,14 +120,23 @@ def get_dayahead_prices(api_key: str, area_code: str, start: datetime, end: date
 
     return result
 
-def update_day_ahead_prices(country_code, resolution):
+def update_day_ahead_prices(country_code, resolution, dap=None):
     logging.debug("Getting day ahead prices for country {0} with resolution {1}".format(country_code, resolution))
+    h = _health_for(dap) if dap is not None else None
+    now_ts = int(time.time())
+    if h is not None:
+        h["last_attempt"] = now_ts
     try:
         start = pd.Timestamp.today(tz='Europe/Berlin').replace(hour=0, minute=0, second=0, microsecond=0)
         end = start + timedelta(days=7)
 
         ts     = get_dayahead_prices(ENTSOE_KEY, country_code, start, end, resolution)
         data   = ts.to_list()
+        if h is not None:
+            h["entsoe_entries"] = len(data)
+            h["source_used"] = "entsoe"
+            h["fallback_attempted"] = False
+            h["fallback_entries"] = None
         # Check if data has valid number of entries
         if resolution == 'PT15M':
             # Only use fallback after 15:00, there is not enough data after that time, something is wrong with entso-e
@@ -104,14 +144,25 @@ def update_day_ahead_prices(country_code, resolution):
             if (country_code == '10Y1001A1001A82H') and (fallback_get_prices_de_lu != None):
                 if (len(data) < (23*4)) or ((len(data) < (24+23)*4) and (current_hour >= 15)):
                     logging.debug("Trying fallback for DE_LU 15min data")
+                    if h is not None:
+                        h["fallback_attempted"] = True
                     fallback_data = fallback_get_prices_de_lu(start)
+                    if h is not None:
+                        h["fallback_entries"] = len(fallback_data)
                     if len(fallback_data) > len(data):
                         data = fallback_data
+                        if h is not None:
+                            h["source_used"] = "fallback"
                         logging.debug("Using Tibber fallback data for DE_LU 15min data")
                     else:
                         logging.warning("Tibber fallback did not return more data")
         if resolution == 'PT60M' and len(data) < 23:
             logging.warning("Invalid number of entries for 60min: {0}".format(len(data)))
+            if h is not None:
+                h["last_error"] = "ENTSO-E returned too few 60min entries ({0})".format(len(data))
+                h["last_error_at"] = now_ts
+                h["source_used"] = None
+                h["consecutive_failures"] += 1
 
             # Fallback no longer used for 60min data
             return None
@@ -129,8 +180,20 @@ def update_day_ahead_prices(country_code, resolution):
         next_date_ts = int(next_date.timestamp())
         logging.debug("Discovered new day ahead prices for {0}/{1}: {2}, next: {3}/{4}".format(str(start), str(first_date_ts), str(prices), str(next_date), str(next_date_ts)))
 
-    except:
+        if h is not None:
+            h["last_success"] = now_ts
+            h["num_prices"] = len(prices)
+            h["first_date"] = first_date_ts
+            h["next_date"] = next_date_ts
+            h["consecutive_failures"] = 0
+
+    except Exception as e:
         logging.error("Exception during entso-e query", exc_info=True)
+        if h is not None:
+            h["last_error"] = "{0}: {1}".format(type(e).__name__, e)
+            h["last_error_at"] = now_ts
+            h["source_used"] = None
+            h["consecutive_failures"] += 1
         return None
 
     # Generate odered json without spaces
@@ -140,9 +203,9 @@ def update_day_ahead_prices(country_code, resolution):
     od['next_date']  = next_date_ts
     return json.dumps(od, separators=(',', ':')), 200
 
-def update_day_ahead_prices_with_retry(country_code, resolution, retries=5):
+def update_day_ahead_prices_with_retry(country_code, resolution, dap=None, retries=5):
     for retry in range(retries):
-        value = update_day_ahead_prices(country_code, resolution)
+        value = update_day_ahead_prices(country_code, resolution, dap)
         if value != None:
             return value
         # Wait one minute more with every retry
@@ -194,7 +257,31 @@ def update():
     for dap, country_code, resolution in daps():
         logging.debug("Check update for {0} {1}".format(country_code, resolution))
         if is_update_necessary(dap_list[dap], 26 if resolution == 'PT60M' else 26*4):
-            dap_list[dap] = update_day_ahead_prices_with_retry(country_code, resolution)
+            dap_list[dap] = update_day_ahead_prices_with_retry(country_code, resolution, dap)
+
+def get_health():
+    """Return a JSON-serializable per-source health/diagnostics report."""
+    out = OrderedDict()
+    for dap, country_code, resolution in daps():
+        h = _health_for(dap)
+        entry = dap_list[dap]
+        serving_ok = isinstance(entry, tuple) and len(entry) == 2 and entry[1] == 200
+        rec = OrderedDict()
+        rec["serving_data"]         = serving_ok
+        rec["source_used"]          = h["source_used"]
+        rec["last_success"]         = h["last_success"]
+        rec["last_attempt"]         = h["last_attempt"]
+        rec["num_prices"]           = h["num_prices"]
+        rec["first_date"]           = h["first_date"]
+        rec["next_date"]            = h["next_date"]
+        rec["entsoe_entries"]       = h["entsoe_entries"]
+        rec["fallback_attempted"]   = h["fallback_attempted"]
+        rec["fallback_entries"]     = h["fallback_entries"]
+        rec["consecutive_failures"] = h["consecutive_failures"]
+        rec["last_error"]           = h["last_error"]
+        rec["last_error_at"]        = h["last_error_at"]
+        out[DAP_NAMES[dap]] = rec
+    return out
 
 # TODO: Rate limit per IP
 @day_ahead_prices_api.route('/v1/day_ahead_prices/<country>/<resolution>', methods=['GET'])

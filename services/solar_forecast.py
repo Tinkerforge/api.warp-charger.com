@@ -33,6 +33,7 @@ import threading
 import time
 from collections import OrderedDict
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlparse
 from urllib.request import urlopen
 
 from flask import Blueprint
@@ -94,6 +95,9 @@ MAX_CACHE_ENTRIES = 50000
 _cache = OrderedDict()
 _cache_lock = threading.Lock()
 
+# Last upstream (Open-Meteo) interaction, for /v1/status diagnostics.
+_upstream_health = {"last_success": None, "last_error": None, "last_error_at": None}
+
 
 def _quantize(value, step):
     return round(value / step) * step
@@ -136,27 +140,45 @@ def fetch_irradiance(lat, lon, dec, az):
       * place:       human readable location string (timezone name)
     """
     url = _build_url(lat, lon, dec, az)
-    with urlopen(url, timeout=10) as response:
-        if response.status != 200:
-            raise Exception(f"Open-Meteo API returned status {response.status}")
-        data = json.loads(response.read().decode())
+    try:
+        with urlopen(url, timeout=10) as response:
+            if response.status != 200:
+                raise Exception(f"Open-Meteo API returned status {response.status}")
+            data = json.loads(response.read().decode())
 
-    hourly = data.get('hourly', {})
-    times = hourly.get('time', [])
-    gti = hourly.get('global_tilted_irradiance', [])
+        hourly = data.get('hourly', {})
+        times = hourly.get('time', [])
+        gti = hourly.get('global_tilted_irradiance', [])
 
-    if not times or not gti or len(times) != len(gti):
-        raise ValueError("Open-Meteo response missing or malformed hourly GTI data")
+        if not times or not gti or len(times) != len(gti):
+            raise ValueError("Open-Meteo response missing or malformed hourly GTI data")
 
-    # Null values (e.g. before sunrise) are reported as None -> treat as 0.
-    gti = [float(v) if v is not None else 0.0 for v in gti]
+        # Null values (e.g. before sunrise) are reported as None -> treat as 0.
+        gti = [float(v) if v is not None else 0.0 for v in gti]
+    except Exception as e:
+        _upstream_health["last_error"] = f"{type(e).__name__}: {e}"
+        _upstream_health["last_error_at"] = int(time.time())
+        raise
 
+    _upstream_health["last_success"] = int(time.time())
     return {
         'first_date': int(times[0]),
         'utc_offset': int(data.get('utc_offset_seconds', 0)),
         'gti': gti,
         'place': data.get('timezone', f"{lat},{lon}"),
     }
+
+
+def get_health():
+    """Return a JSON-serializable health/diagnostics report for this service."""
+    return OrderedDict([
+        ("commercial", OPENMETEO_KEY is not None),
+        ("upstream", urlparse(OPEN_METEO_BASE_URL).hostname),
+        ("cache_entries", len(_cache)),
+        ("last_success", _upstream_health["last_success"]),
+        ("last_error", _upstream_health["last_error"]),
+        ("last_error_at", _upstream_health["last_error_at"]),
+    ])
 
 
 def get_cached_irradiance(lat, lon, dec, az):

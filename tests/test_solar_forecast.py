@@ -188,8 +188,9 @@ class TestCaching(SolarForecastTestBase):
         with patch('services.solar_forecast.urlopen') as mock_urlopen:
             mock_urlopen.return_value = make_open_meteo_response()
             self.client.get('/estimate/51.880/8.630/30/0/5')
-            # same quantized cell, different power -> still cached
-            self.client.get('/estimate/51.882/8.628/30/0/9')
+            # same cell, different power -> served from cache (wp applied at
+            # response time), regardless of the configured cache granularity
+            self.client.get('/estimate/51.880/8.630/30/0/9')
             self.assertEqual(mock_urlopen.call_count, 1)
 
     def test_distinct_cells_fetch_separately(self):
