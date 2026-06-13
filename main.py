@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from services import day_ahead_prices, temperatures
+from services import day_ahead_prices, temperatures, solar_forecast
 from i18n import get_translations, SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE
 from flask import Flask, Blueprint, render_template, request, redirect, abort
 import logging
@@ -66,6 +66,7 @@ app = Flask(__name__)
 app.register_blueprint(main_api)
 app.register_blueprint(day_ahead_prices.day_ahead_prices_api)
 app.register_blueprint(temperatures.temperatures_api)
+app.register_blueprint(solar_forecast.solar_forecast_api)
 app.config["JSON_SORT_KEYS"] = False
 
 port = int(os.environ.get('PORT', DEFAULT_PORT))

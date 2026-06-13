@@ -2,6 +2,7 @@
 
 import logging
 import json
+import os
 from urllib.request import urlopen
 from urllib.error import URLError, HTTPError
 from flask import Blueprint
@@ -11,7 +12,21 @@ temperatures_api = Blueprint('temperatures_api', __name__)
 
 logger = logging.getLogger(__name__)
 
-OPEN_METEO_BASE_URL = "https://api.open-meteo.com/v1/dwd-icon"
+_FILE_DIR = os.path.dirname(os.path.realpath(__file__))
+_PROJECT_DIR = os.path.abspath(os.path.join(_FILE_DIR, '..'))
+
+# Optional commercial Open-Meteo API key. When present, the dedicated customer
+# endpoint is used (commercial-use licence). Otherwise fall back to the free,
+# non-commercial endpoint for development.
+try:
+    OPENMETEO_KEY = open(os.path.join(_PROJECT_DIR, "openmeteo.key")).read().strip()
+except Exception:
+    OPENMETEO_KEY = None
+
+if OPENMETEO_KEY:
+    OPEN_METEO_BASE_URL = "https://customer-api.open-meteo.com/v1/dwd-icon"
+else:
+    OPEN_METEO_BASE_URL = "https://api.open-meteo.com/v1/dwd-icon"
 
 
 # Fetch temperature forecast from Open-Meteo DWD ICON API.
@@ -25,6 +40,9 @@ def fetch_temperature_forecast(lat: float, lon: float) -> dict:
         f"&forecast_days=2"
         f"&timeformat=unixtime"
     )
+
+    if OPENMETEO_KEY:
+        url += f"&apikey={OPENMETEO_KEY}"
 
     with urlopen(url, timeout=10) as response:
         if response.status != 200:
