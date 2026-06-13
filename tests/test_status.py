@@ -72,6 +72,37 @@ class TestStatusEndpoint(unittest.TestCase):
                 self.assertIn(field, rec)
         self.assertIn('now', d)
 
+    def test_status_page_renders(self):
+        # /status renders an HTML page; needs the real template + static folders
+        import os
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        app = Flask(__name__,
+                    template_folder=os.path.join(root, 'templates'),
+                    static_folder=os.path.join(root, 'static'))
+        app.register_blueprint(status_api)
+        client = app.test_client()
+
+        # /status redirects to the language-specific page
+        r = client.get('/status')
+        self.assertEqual(r.status_code, 302)
+        self.assertIn('/status', r.headers['Location'])
+
+        # language-specific pages render
+        for lang in ('en', 'de'):
+            r = client.get(f'/{lang}/status')
+            self.assertEqual(r.status_code, 200)
+            self.assertIn('text/html', r.headers['Content-Type'])
+            body = r.data.decode()
+            self.assertIn('at_15min', body)
+            self.assertIn(f'/{"de" if lang == "en" else "en"}/status', body)  # lang switcher
+
+        # unsupported language -> 404
+        self.assertEqual(client.get('/fr/status').status_code, 404)
+
+        # the JSON endpoint must still win over /<lang>/status
+        rj = client.get('/v1/status')
+        self.assertEqual(rj.headers['Content-Type'], 'application/json; charset=utf-8')
+
 
 if __name__ == '__main__':
     unittest.main()

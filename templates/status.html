@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}" data-bs-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ t.status_title }} &middot; api.warp-charger.com</title>
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='bootstrap-icons.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='api.css') }}">
+<script src="{{ url_for('static', filename='api.js') }}"></script>
+</head>
+<body>
+
+{% macro badge(ok, yes, no) -%}
+<span class="badge text-bg-{{ 'success' if ok else 'danger' }}">{{ yes if ok else no }}</span>
+{%- endmacro %}
+
+<!-- Home, Language Switcher & Theme Toggle -->
+<div class="theme-toggle">
+    <a href="/{{ lang }}/" class="btn btn-outline-secondary" title="{{ t.status_api_docs }}">
+        <i class="bi bi-house-door-fill"></i>
+    </a>
+    <a href="/{{ 'en' if lang == 'de' else 'de' }}/status" class="btn btn-outline-secondary btn-lang" title="{{ t.switch_language }}">
+        {{ 'EN' if lang == 'de' else 'DE' }}
+    </a>
+    <button class="btn btn-outline-secondary" onclick="toggleTheme()" title="{{ t.toggle_theme }}">
+        <i class="bi bi-sun-fill d-none" id="theme-icon-light"></i>
+        <i class="bi bi-moon-fill" id="theme-icon-dark"></i>
+    </button>
+</div>
+
+<div class="api-content">
+<h1>{{ t.status_title }}</h1>
+<p class="subtitle text-secondary">
+    {{ t.status_generated }} {{ s.now | ts }} &middot;
+    <a href="/v1/status{{ '?check=1' if check else '' }}">{{ t.status_json }}</a>
+</p>
+
+<!-- ============ Open-Meteo services ============ -->
+<h2>{{ t.status_weather_heading }}</h2>
+{% if 'openmeteo_key_valid' in s %}
+<p>{{ t.status_key_check }} {{ badge(s.openmeteo_key_valid, t.status_key_accepted, t.status_key_rejected) }}</p>
+{% endif %}
+<div class="table-wrap">
+<table class="param-table status-table">
+<tr class="thead-row"><th>{{ t.status_col_service }}</th><th>{{ t.status_col_mode }}</th><th>{{ t.status_col_upstream }}</th><th>{{ t.status_col_last_success }}</th><th>{{ t.status_col_last_error }}</th></tr>
+{% for name, svc in [(t.status_solar_forecast, s.solar_forecast), (t.status_temperatures, s.temperatures)] %}
+<tr>
+    <td data-label="{{ t.status_col_service }}">{{ name }}{% if 'cache_entries' in svc %} <span class="text-secondary">({{ svc.cache_entries }} {{ t.status_cached }})</span>{% endif %}</td>
+    <td data-label="{{ t.status_col_mode }}">{% if svc.commercial %}<span class="badge text-bg-success">{{ t.status_commercial }}</span>{% else %}<span class="badge text-bg-warning">{{ t.status_free }}</span>{% endif %}</td>
+    <td data-label="{{ t.status_col_upstream }}"><code>{{ svc.upstream }}</code></td>
+    <td data-label="{{ t.status_col_last_success }}">{% if svc.last_success %}{{ svc.last_success | ts }}<br><span class="text-secondary">{{ svc.last_success | ago }}</span>{% else %}<span class="text-secondary">{{ t.status_never }}</span>{% endif %}</td>
+    <td data-label="{{ t.status_col_last_error }}">{% if svc.last_error %}<span class="text-danger">{{ svc.last_error }}</span><br><span class="text-secondary">{{ svc.last_error_at | ago }}</span>{% else %}<span class="text-success">{{ t.status_none }}</span>{% endif %}</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+
+<!-- ============ Day-ahead prices ============ -->
+<h2>{{ t.status_dap_heading }}</h2>
+<div class="table-wrap">
+<table class="param-table status-table">
+<tr class="thead-row"><th>{{ t.status_col_zone }}</th><th>{{ t.status_col_serving }}</th><th>{{ t.status_col_source }}</th><th>{{ t.status_col_prices }}</th><th>{{ t.status_col_entsoe_fallback }}</th><th>{{ t.status_col_last_success }}</th><th>{{ t.status_col_fails }}</th><th>{{ t.status_col_last_error }}</th></tr>
+{% for zone, d in s.day_ahead_prices.items() %}
+<tr>
+    <td data-label="{{ t.status_col_zone }}"><code>{{ zone }}</code></td>
+    <td data-label="{{ t.status_col_serving }}">{{ badge(d.serving_data, t.status_yes, t.status_no) }}</td>
+    <td data-label="{{ t.status_col_source }}">
+        {% if d.source_used == 'entsoe' %}<span class="badge text-bg-success">ENTSO-E</span>
+        {% elif d.source_used == 'fallback' %}<span class="badge text-bg-warning">{{ t.status_fallback }}</span>
+        {% else %}<span class="badge text-bg-secondary">{{ t.status_none }}</span>{% endif %}
+    </td>
+    <td data-label="{{ t.status_col_prices }}">{{ d.num_prices if d.num_prices is not none else '\u2014' }}</td>
+    <td data-label="{{ t.status_col_entsoe_fallback }}">{{ d.entsoe_entries if d.entsoe_entries is not none else '\u2014' }} /
+        {% if d.fallback_attempted %}{{ d.fallback_entries if d.fallback_entries is not none else '\u2014' }}{% else %}<span class="text-secondary">{{ t.status_not_tried }}</span>{% endif %}</td>
+    <td data-label="{{ t.status_col_last_success }}">{% if d.last_success %}{{ d.last_success | ts }}<br><span class="text-secondary">{{ d.last_success | ago }}</span>{% else %}<span class="text-secondary">{{ t.status_never }}</span>{% endif %}</td>
+    <td data-label="{{ t.status_col_fails }}">{% if d.consecutive_failures %}<span class="text-danger">{{ d.consecutive_failures }}</span>{% else %}0{% endif %}</td>
+    <td data-label="{{ t.status_col_last_error }}">{% if d.last_error %}<span class="text-danger">{{ d.last_error }}</span><br><span class="text-secondary">{{ d.last_error_at | ago }}</span>{% else %}<span class="text-success">{{ t.status_none }}</span>{% endif %}</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+
+<p class="note">{{ t.status_note }}</p>
+
+{% include '_footer.html' %}
+</div>
+
+<script src="{{ url_for('static', filename='bootstrap.bundle.min.js') }}"></script>
+</body>
+</html>

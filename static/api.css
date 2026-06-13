@@ -69,6 +69,18 @@ body {
   align-items: center;
   justify-content: center;
   padding: 0;
+  /* Frosted-glass effect so the buttons stay legible over page text on mobile */
+  background-color: rgba(255, 255, 255, 0.6);
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
+  backdrop-filter: blur(10px) saturate(160%);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+}
+
+[data-bs-theme="dark"] .theme-toggle .btn {
+  background-color: rgba(33, 37, 41, 0.55);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
 }
 
 .btn-lang {
@@ -223,3 +235,88 @@ footer {
   text-decoration: underline;
   opacity: 1;
 }
+
+/* --------------------------------------------------------------------------
+   Responsive: keep wide tables from pushing the whole page sideways on mobile
+   -------------------------------------------------------------------------- */
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0.75rem 0;
+  max-width: 100%;
+}
+
+.table-wrap .param-table {
+  margin: 0;
+}
+
+footer {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 576px) {
+  .api-content {
+    padding: 1.5rem 0.75rem;
+  }
+
+  .param-table {
+    font-size: 0.8rem;
+  }
+
+  .param-table th,
+  .param-table td {
+    padding: 0.35rem 0.5rem;
+  }
+
+  /* Stack the wide status tables into cards so they fit without scrolling */
+  .status-table {
+    font-size: 0.85rem;
+  }
+
+  .status-table thead,
+  .status-table .thead-row {
+    display: none;
+  }
+
+  .status-table,
+  .status-table tbody,
+  .status-table tr,
+  .status-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .status-table tr {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 8px;
+    padding: 0.6rem 0.85rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .status-table td {
+    border: none;
+    padding: 0.18rem 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .status-table td::before {
+    content: attr(data-label) ": ";
+    font-weight: 600;
+    color: var(--bs-secondary-color);
+  }
+
+  /* First column becomes the card title */
+  .status-table td:first-child {
+    font-size: 1rem;
+    margin-bottom: 0.35rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--bs-border-color);
+    white-space: normal;
+  }
+
+  .status-table td:first-child::before {
+    content: "";
+  }
+}
+

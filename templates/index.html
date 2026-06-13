@@ -12,8 +12,11 @@
 </head>
 <body>
 
-<!-- Theme Toggle & Language Switcher -->
+<!-- Status, Theme Toggle & Language Switcher -->
 <div class="theme-toggle">
+    <a href="/{{ lang }}/status" class="btn btn-outline-secondary" title="{{ t.status_title }}">
+        <i class="bi bi-activity"></i>
+    </a>
     <a href="/{{ 'en' if lang == 'de' else 'de' }}/" class="btn btn-outline-secondary btn-lang" title="{{ t.switch_language }}">
         {{ 'EN' if lang == 'de' else 'DE' }}
     </a>
@@ -70,14 +73,37 @@
 <p class="note">{{ t.temp_note|safe }}</p>
 </div>
 
+<div class="endpoint">
+<h3><span class="method">GET</span> <span class="url">/v1/solar_forecast/&lt;lat&gt;/&lt;lon&gt;/&lt;dec&gt;/&lt;az&gt;/&lt;wp&gt;</span> <span class="badge text-bg-warning">{{ t.solar_testing_badge }}</span></h3>
+<p class="note"><strong>{{ t.solar_testing }}</strong></p>
+<p>{{ t.solar_description }}</p>
+<table class="param-table">
+<tr><th>{{ t.solar_param_header }}</th><th>{{ t.solar_range_header }}</th><th>{{ t.solar_description_header }}</th></tr>
+<tr><td>lat</td><td><code>-90</code> to <code>90</code></td><td>{{ t.solar_lat_desc }}</td></tr>
+<tr><td>lon</td><td><code>-180</code> to <code>180</code></td><td>{{ t.solar_lon_desc }}</td></tr>
+<tr><td>dec</td><td><code>0</code> to <code>90</code></td><td>{{ t.solar_dec_desc }}</td></tr>
+<tr><td>az</td><td><code>-180</code> to <code>180</code></td><td>{{ t.solar_az_desc }}</td></tr>
+<tr><td>wp</td><td><code>&gt;0</code></td><td>{{ t.solar_wp_desc }}</td></tr>
+</table>
+
+<p><strong>{{ t.solar_example }}</strong></p>
+<pre><code>curl https://api.warp-charger.com/v1/solar_forecast/51.93/8.63/30/0/9750</code></pre>
+
+<p><strong>{{ t.solar_response }}</strong></p>
+<pre><code>{
+  <span class="string">"first_date"</span>: <span class="number">1771369200</span>,    <span class="comment">// {{ t.solar_comment_first_date }}</span>
+  <span class="string">"resolution"</span>: <span class="number">60</span>,            <span class="comment">// {{ t.solar_comment_resolution }}</span>
+  <span class="string">"forecast"</span>: [<span class="number">0</span>, <span class="number">0</span>, <span class="number">145</span>, <span class="number">...</span>] <span class="comment">// {{ t.solar_comment_forecast }}</span>
+}</code></pre>
+<p class="note">{{ t.solar_note|safe }}</p>
+</div>
+
 <h2>{{ t.errors }}</h2>
 <p>{{ t.errors_description|safe }}</p>
 <pre><code>{<span class="string">"error"</span>: <span class="string">"Data not found"</span>}        <span class="comment">// 404</span>
 {<span class="string">"error"</span>: <span class="string">"Country not supported"</span>} <span class="comment">// 400</span></code></pre>
 
-<footer>{{ t.footer_ecosystem }} &middot; <a href="https://www.warp-charger.com">warp-charger.com</a> &middot; <a href="https://github.com/Tinkerforge/api.warp-charger.com">{{ t.footer_source }}</a>
-<div class="footer-legal"><a href="https://www.tinkerforge.com/{{ lang }}/home/legal_info/">{{ t.footer_legal_info }}</a> &middot; <a href="https://www.tinkerforge.com/{{ lang }}/home/privacy_notice/">{{ t.footer_privacy }}</a> &middot; <a href="https://www.tinkerforge.com/{{ lang }}/home/terms_and_conditions/">{{ t.footer_terms }}</a></div>
-</footer>
+{% include '_footer.html' %}
 </div>
 
 <script src="{{ url_for('static', filename='bootstrap.bundle.min.js') }}"></script>
